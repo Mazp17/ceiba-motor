@@ -176,11 +176,39 @@ importers:
         specifier: ^5.1.1
         version: 5.1.1(vite@8.3.8)
 
+  apps/sandbox:
+    dependencies:
+      '@babylonjs/core':
+        specifier: ^9.37.1
+        version: 9.37.1
+      '@ceiba/babylon':
+        specifier: workspace:*
+        version: link:../../packages/babylon
+      '@ceiba/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+    devDependencies:
+      vite:
+        specifier: ^8.3.8
+        version: 8.3.8
+
+  packages/babylon:
+    devDependencies:
+      '@babylonjs/core':
+        specifier: ^9.37.1
+        version: 9.37.1
+      '@ceiba/core':
+        specifier: workspace:^
+        version: link:../core
+
   packages/core: {}
 
   packages/streaming: {}
 
 packages:
+
+  '@babylonjs/core@9.37.1':
+    resolution: {integrity: sha512-OABdYAU5FvCGmIHj6zpfK+LTLJc8zUpKOhI0QNkDYyXy2P5ROA2dnUxfZCeR/TL1oNVnS/H4w/uUSt9GHDFZWQ==}
 
   '@biomejs/biome@2.6.8':
     resolution: {integrity: sha512-kqZUFvX6/aYQOmzfRN5ANcfNS9wLH4aHLWWP/dQKyhRZVoA6rdWszA7DGugFcxPbMiznUyVYyukVl+ExZN4PQA==}
@@ -785,6 +813,8 @@ packages:
     hasBin: true
 
 snapshots:
+
+  '@babylonjs/core@9.37.1': {}
 
   '@biomejs/biome@2.6.8':
     optionalDependencies:

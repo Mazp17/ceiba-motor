@@ -5,6 +5,7 @@ import { createLogger, type Logger, type LogLevel } from './logger.ts'
 export const PHASES = ['input', 'update', 'physics', 'lateUpdate', 'render'] as const
 export type Phase = (typeof PHASES)[number]
 
+/** What a system receives on every update. */
 export interface Frame {
   /** Seconds. The fixed step in `update`/`physics`, the scaled frame time elsewhere. */
   dt: number
@@ -12,7 +13,9 @@ export interface Frame {
   alpha: number
 }
 
+/** A unit of per-frame work. If `update` throws, the system is disabled and `system:error` is emitted. */
 export interface System {
+  /** Unique within the engine; used to remove or re-enable the system. */
   name: string
   phase: Phase
   /** Lower runs first within the phase. Default 0. */
@@ -20,22 +23,27 @@ export interface System {
   update(frame: Frame): void
 }
 
+/** How a package registers itself: `install` adds its systems and event handlers to the engine. */
 export interface Plugin {
   name: string
+  /** May be async, e.g. to load WASM before registering systems. */
   install(engine: Engine): void | Promise<void>
 }
 
 /** Plugins add their events here by declaration merging. */
 export interface EngineEvents {
+  /** A system threw and was disabled. `enableSystem` turns it back on. */
   'system:error': { system: string; error: unknown }
 }
 
 export interface EngineOptions {
+  /** Not used by the core; exposed as `engine.canvas` for plugins that render or read input. */
   canvas?: HTMLCanvasElement
   /** Seconds per simulation step. Default 1/60. */
   fixedDt?: number
   /** Fixed steps allowed per frame before the backlog is dropped. Default 8. */
   maxSubSteps?: number
+  /** Default `'info'`. */
   logLevel?: LogLevel
 }
 
@@ -47,6 +55,7 @@ export interface Engine {
   readonly clock: { timeScale: number; paused: boolean; time: number }
   /** Await the result if the plugin installs asynchronously. */
   use(plugin: Plugin): void | Promise<void>
+  /** Throws if a system with the same name is registered. Safe to call from inside a system. */
   addSystem(system: System): void
   /** No-op if no system has that name. Safe to call from inside a system. */
   removeSystem(name: string): void
@@ -54,10 +63,13 @@ export interface Engine {
   enableSystem(name: string): void
   /** Advances one frame. `start()` calls it from requestAnimationFrame; call it directly when headless. */
   tick(nowMs: number): void
+  /** Starts the requestAnimationFrame loop. No-op if already running. */
   start(): void
+  /** Stops the loop. The time spent stopped is not simulated when `start()` is called again. */
   stop(): void
 }
 
+/** Creates an engine with no systems. Synchronous; nothing runs until `start()` or `tick()`. */
 export function createEngine(options: EngineOptions = {}): Engine {
   const { fixedDt = 1 / 60, maxSubSteps = 8 } = options
   const log = createLogger(options.logLevel)

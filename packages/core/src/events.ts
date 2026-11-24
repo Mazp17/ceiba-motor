@@ -1,6 +1,8 @@
+/** Typed publish/subscribe. `E` maps each event name to its payload type. */
 export interface EventBus<E> {
   /** Returns the unsubscribe function. */
   on<K extends keyof E>(type: K, handler: (payload: E[K]) => void): () => void
+  /** Calls the handlers synchronously, in subscription order. */
   emit<K extends keyof E>(type: K, payload: E[K]): void
 }
 

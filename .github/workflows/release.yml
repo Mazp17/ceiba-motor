@@ -5,6 +5,7 @@ on:
     branches: [main]
 
 permissions:
+  actions: write
   contents: write
   issues: write
   pull-requests: write
@@ -14,8 +15,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@v5
+        id: release
         with:
-          # PRs opened with GITHUB_TOKEN do not trigger CI; a personal token in this secret does.
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+      # A PR opened with GITHUB_TOKEN does not trigger workflows, but a manual dispatch does:
+      # run CI on the release branch so the PR gets its required check.
+      - if: steps.release.outputs.prs_created == 'true'
+        run: gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}

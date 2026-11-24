@@ -2,6 +2,12 @@
 
 **Español** · [English](docs/README.en.md)
 
+[![CI](https://github.com/Mazp17/ceiba-motor/actions/workflows/ci.yml/badge.svg)](https://github.com/Mazp17/ceiba-motor/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/Mazp17/ceiba-motor)](LICENSE)
+![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)
+![Babylon.js](https://img.shields.io/badge/sobre-Babylon.js-BB464B)
+![Status](https://img.shields.io/badge/estado-desarrollo%20temprano-orange)
+
 Capa de mundo abierto para juegos en el navegador, sobre [Babylon.js](https://www.babylonjs.com/): streaming del mundo por chunks, física por chunk y un core de sistemas aislados.
 
 > En desarrollo temprano. La API cambia sin aviso y todavía no hay paquetes publicados en npm.

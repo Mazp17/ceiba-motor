@@ -1,6 +1,6 @@
 {
   "name": "@ceiba/debug",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Debug overlay for the Ceiba engine: performance counters, streaming budgets and chunk map, disabled systems and debug actions",
   "license": "MIT",
   "repository": {

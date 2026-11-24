@@ -178,6 +178,8 @@ importers:
 
   packages/core: {}
 
+  packages/streaming: {}
+
 packages:
 
   '@biomejs/biome@2.6.8':

@@ -1,0 +1,25 @@
+{
+  "name": "@ceiba/streaming",
+  "version": "0.0.0",
+  "description": "Chunk grid, load priority, memory budgets and LRU eviction for streaming a large world in the Ceiba engine",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mazp17/ceiba-motor.git",
+    "directory": "packages/streaming"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

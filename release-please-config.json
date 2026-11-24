@@ -3,6 +3,7 @@
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": true,
   "packages": {
-    "packages/core": { "release-type": "node", "component": "core", "initial-version": "0.0.1" }
+    "packages/core": { "release-type": "node", "component": "core", "initial-version": "0.0.1" },
+    "packages/streaming": { "release-type": "node", "component": "streaming", "initial-version": "0.0.1" }
   }
 }

@@ -17,7 +17,7 @@ Open-world layer for browser games on top of [Babylon.js](https://www.babylonjs.
 | Package | Status | What it does |
 | --- | --- | --- |
 | `@ceiba/core` | ready | Fixed-step loop, phases, error isolation, events, clock, logger, plugins |
-| `@ceiba/streaming` | pending | Chunk grid, priority queue, memory budgets, LRU |
+| `@ceiba/streaming` | pure logic done, Babylon adapter pending | Chunk grid, priority queue, memory budgets, LRU |
 | `@ceiba/physics` | pending | Per-chunk colliders and vehicle on Havok |
 | `@ceiba/input` | pending | Action mapping over keyboard, mouse and gamepad |
 | `@ceiba/save` | pending | State to IndexedDB with schema versioning |

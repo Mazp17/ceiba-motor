@@ -21,7 +21,10 @@ export default {
     const { scene } = babylon
     const response = await fetch(MANIFEST_URL)
     if (!response.ok) throw new Error(`no world at ${MANIFEST_URL}: run "pnpm world" and reload`)
-    const { chunkSize } = (await response.json()) as { chunkSize: number }
+    const { chunkSize, chunks } = (await response.json()) as { chunkSize: number; chunks: { cx: number; cz: number }[] }
+    // World extent in chunks: [min, max) on each axis.
+    const min = { x: Math.min(...chunks.map((c) => c.cx)), z: Math.min(...chunks.map((c) => c.cz)) }
+    const max = { x: Math.max(...chunks.map((c) => c.cx)) + 1, z: Math.max(...chunks.map((c) => c.cz)) + 1 }
 
     scene.clearColor = new Color4(0.55, 0.7, 0.9, 1)
     new HemisphericLight('light', new Vector3(0.3, 1, 0.2), scene)
@@ -63,6 +66,18 @@ export default {
       camera.position.z += delta.z
     })
 
+    // Keeps the camera over the world: past the edge there is nothing to stream and it looks like a stall.
+    engine.addSystem({
+      name: 'world:bounds',
+      phase: 'update',
+      update() {
+        const { origin } = streaming.streamer
+        const { position } = camera
+        position.x = Math.min(Math.max(position.x, (min.x - origin.cx) * chunkSize), (max.x - origin.cx) * chunkSize)
+        position.z = Math.min(Math.max(position.z, (min.z - origin.cz) * chunkSize), (max.z - origin.cz) * chunkSize)
+      },
+    })
+
     const [{ debugPlugin }, { babylonStats }] = await Promise.all([
       import('@ceiba/debug'),
       import('@ceiba/debug/babylon'),
@@ -87,10 +102,11 @@ export default {
     debug.addAction('slower', () => {
       camera.speed /= 2
     })
-    // Up to 20 chunks away on each axis: the recovery-from-a-jump case of the stress test.
+    // Anywhere in the world: the recovery-from-a-jump case of the stress test.
     debug.addAction('teleport', () => {
-      camera.position.x += Math.round((Math.random() - 0.5) * 40) * chunkSize
-      camera.position.z += Math.round((Math.random() - 0.5) * 40) * chunkSize
+      const { origin } = streaming.streamer
+      camera.position.x = (min.x + Math.random() * (max.x - min.x) - origin.cx) * chunkSize
+      camera.position.z = (min.z + Math.random() * (max.z - min.z) - origin.cz) * chunkSize
     })
 
     return () => {

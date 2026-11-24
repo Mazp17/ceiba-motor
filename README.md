@@ -1,5 +1,7 @@
 # Ceiba
 
+**Español** · [English](docs/README.en.md)
+
 Capa de mundo abierto para juegos en el navegador, sobre [Babylon.js](https://www.babylonjs.com/): streaming del mundo por chunks, física por chunk y un core de sistemas aislados.
 
 > En desarrollo temprano. La API cambia sin aviso y todavía no hay paquetes publicados en npm.
@@ -26,7 +28,7 @@ engine.addSystem({
   name: 'mover',
   phase: 'update', // input | update | physics | lateUpdate | render
   update({ dt }) {
-    // simulación en paso fijo
+    // fixed-step simulation
   },
 })
 
@@ -45,6 +47,14 @@ pnpm build
 pnpm test
 ```
 
+## Roadmap
+
+Estado del proyecto y resultado esperado en [ROADMAP.md](ROADMAP.md) (en inglés).
+
 ## Licencia
 
 [MIT](LICENSE)
+
+---
+
+Hecho con ❤️ desde Colombia

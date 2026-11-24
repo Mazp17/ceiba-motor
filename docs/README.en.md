@@ -17,6 +17,7 @@ Open-world layer for browser games on top of [Babylon.js](https://www.babylonjs.
 | Package | Status | What it does |
 | --- | --- | --- |
 | `@ceiba/core` | ready | Fixed-step loop, phases, error isolation, events, clock, logger, plugins |
+| `@ceiba/babylon` | ready | Babylon engine (WebGPU or WebGL2) and scene, rendered from the core loop |
 | `@ceiba/streaming` | pure logic done, Babylon adapter pending | Chunk grid, priority queue, memory budgets, LRU |
 | `@ceiba/physics` | pending | Per-chunk colliders and vehicle on Havok |
 | `@ceiba/input` | pending | Action mapping over keyboard, mouse and gamepad |
@@ -49,11 +50,14 @@ Requires Node 24 and pnpm 12.
 
 ```sh
 pnpm install
+pnpm dev
 pnpm build
 pnpm lint
 pnpm test
 pnpm size
 ```
+
+`pnpm dev` opens the sandbox (Vite) at `http://localhost:5173/?scene=hello`.
 
 ## Roadmap
 

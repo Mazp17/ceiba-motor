@@ -1,0 +1,17 @@
+{
+  "name": "@ceiba/sandbox",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^9.37.1",
+    "@ceiba/babylon": "workspace:*",
+    "@ceiba/core": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8"
+  }
+}

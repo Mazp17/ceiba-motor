@@ -3,20 +3,26 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 
-// Bytes, gzip. streaming measured 3.9 kB as pure logic; 8 kB leaves room for its thin Babylon adapter.
-const BUDGETS = { core: 10_000, streaming: 8_000 }
-// These must also stay free of runtime dependencies.
-const NO_DEPS = ['core', 'streaming']
+// Bytes, gzip, of the package's own code: what it imports (Babylon) is not counted.
+// No package bundles anything, so none may have `dependencies`: Babylon and other @ceiba packages
+// are peers, installed once by the game.
+// streaming measured 3.9 kB as pure logic; 8 kB leaves room for its thin Babylon adapter.
+// babylon measured 1.5 kB when written; it is glue, so twice that means it stopped being thin.
+const BUDGETS = { core: 10_000, streaming: 8_000, babylon: 3_000 }
+// Pure logic: these must have no peers either.
+const NO_PEERS = ['core', 'streaming']
 
 let failed = false
 for (const [name, budget] of Object.entries(BUDGETS)) {
   const dir = `packages/${name}/dist`
   const js = readdirSync(dir, { recursive: true }).filter((file) => file.endsWith('.js'))
   const size = gzipSync(Buffer.concat(js.map((file) => readFileSync(`${dir}/${file}`)))).length
-  const deps = Object.keys(JSON.parse(readFileSync(`packages/${name}/package.json`, 'utf8')).dependencies ?? {})
-  const ok = size <= budget && !(NO_DEPS.includes(name) && deps.length)
+  const pkg = JSON.parse(readFileSync(`packages/${name}/package.json`, 'utf8'))
+  const deps = Object.keys(pkg.dependencies ?? {})
+  const peers = Object.keys(pkg.peerDependencies ?? {})
+  const ok = size <= budget && !deps.length && !(NO_PEERS.includes(name) && peers.length)
   console.log(
-    `${ok ? 'ok  ' : 'FAIL'} @ceiba/${name}: ${size} B gzip of ${budget} B (${Math.round((size / budget) * 100)}%), ${deps.length} dependencies`,
+    `${ok ? 'ok  ' : 'FAIL'} @ceiba/${name}: ${size} B gzip of ${budget} B (${Math.round((size / budget) * 100)}%), ${deps.length} dependencies, ${peers.length} peers`,
   )
   failed ||= !ok
 }

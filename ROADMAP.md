@@ -1,6 +1,6 @@
 # Roadmap
 
-**Overall progress: 14%** (6 of 44 tasks done)
+**Overall progress: 23%** (11 of 48 tasks done)
 
 Progress is the share of completed tasks, counted equally. Tasks differ a lot in size, so
 read it as a rough indicator, not as time remaining.
@@ -27,8 +27,8 @@ come from Babylon.js, and all game logic lives in the game that consumes the eng
 
 | # | Phase | Progress | Output |
 | --- | --- | --- | --- |
-| 1 | Monorepo and core | 60% | `@ceiba/core`: fixed-step loop, phases, error isolation, events, clock, logger, plugins |
-| 2 | Streaming | 0% | `@ceiba/streaming`: chunk grid, lifecycle, priority queue, memory budgets with LRU, hysteresis, persistent cache |
+| 1 | Monorepo and core | 100% | `@ceiba/core`: fixed-step loop, phases, error isolation, events, clock, logger, plugins |
+| 2 | Streaming | 7% | `@ceiba/streaming`: chunk grid, lifecycle, priority queue, memory budgets with LRU, hysteresis, persistent cache |
 | 3 | Tools | 0% | Asset pipeline CLI and a headless smoke test |
 | 4 | Debug | 0% | `@ceiba/debug`: performance overlay, chunk visualizer, physics wireframes |
 | 5 | Physics, input and vehicle | 0% | `@ceiba/physics` and `@ceiba/input`: per-chunk colliders, capsule character, raycast vehicle, action mapping |

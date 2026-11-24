@@ -1,18 +1,18 @@
 import { expect, test } from 'vitest'
-import { createEngine, type Frame, type Phase } from '../src/index.ts'
+import { createEngine, type Phase } from '../src/index.ts'
 
 const make = () => createEngine({ fixedDt: 0.01, logLevel: 'silent' })
 
 test('fixed step runs whole steps and leaves the rest as alpha', () => {
   const engine = make()
   let steps = 0
-  let rendered: Frame | undefined
+  const alphas: number[] = []
   engine.addSystem({ name: 'sim', phase: 'update', update: () => void steps++ })
-  engine.addSystem({ name: 'draw', phase: 'render', update: (f) => void (rendered = f) })
+  engine.addSystem({ name: 'draw', phase: 'render', update: (f) => void alphas.push(f.alpha) })
   engine.tick(0)
   engine.tick(35)
   expect(steps).toBe(3)
-  expect(rendered!.alpha).toBeCloseTo(0.5)
+  expect(alphas.at(-1)).toBeCloseTo(0.5)
   expect(engine.clock.time).toBeCloseTo(0.03)
 })
 
@@ -38,7 +38,14 @@ test('a failing system is disabled and the rest keep running', () => {
   let good = 0
   const errors: string[] = []
   engine.events.on('system:error', (e) => errors.push(e.system))
-  engine.addSystem({ name: 'bad', phase: 'input', update: () => { bad++; throw new Error('boom') } })
+  engine.addSystem({
+    name: 'bad',
+    phase: 'input',
+    update: () => {
+      bad++
+      throw new Error('boom')
+    },
+  })
   engine.addSystem({ name: 'good', phase: 'input', update: () => void good++ })
   engine.tick(0)
   engine.tick(16)
@@ -76,9 +83,9 @@ test('duplicate system names are rejected; event handlers unsubscribe', () => {
 
 test('use installs the plugin with the engine', () => {
   const engine = make()
-  let got: unknown
-  engine.use({ name: 'p', install: (e) => void (got = e) })
-  expect(got).toBe(engine)
+  const got: unknown[] = []
+  engine.use({ name: 'p', install: (e) => void got.push(e) })
+  expect(got[0]).toBe(engine)
 })
 
 test('removeSystem takes effect in the same frame and the system can be added again', () => {
@@ -99,7 +106,13 @@ test('removeSystem takes effect in the same frame and the system can be added ag
 test('enableSystem turns a failed system back on', () => {
   const engine = make()
   let calls = 0
-  engine.addSystem({ name: 'flaky', phase: 'input', update: () => { if (++calls === 1) throw new Error('boom') } })
+  engine.addSystem({
+    name: 'flaky',
+    phase: 'input',
+    update: () => {
+      if (++calls === 1) throw new Error('boom')
+    },
+  })
   engine.tick(0)
   engine.tick(16)
   expect(calls).toBe(1)

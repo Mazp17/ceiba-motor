@@ -44,6 +44,7 @@ Requires Node 24 and pnpm 12.
 ```sh
 pnpm install
 pnpm build
+pnpm lint
 pnpm test
 pnpm size
 ```

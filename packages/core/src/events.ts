@@ -5,16 +5,17 @@ export interface EventBus<E> {
 }
 
 export function createEventBus<E>(): EventBus<E> {
+  // biome-ignore lint/suspicious/noExplicitAny: handlers of every event type share one map
   const handlers = new Map<keyof E, Set<(payload: any) => void>>()
   return {
     on(type, handler) {
-      let set = handlers.get(type)
-      if (!set) handlers.set(type, (set = new Set()))
+      const set = handlers.get(type) ?? new Set()
+      handlers.set(type, set)
       set.add(handler)
       return () => set.delete(handler)
     },
     emit(type, payload) {
-      handlers.get(type)?.forEach((handler) => handler(payload))
+      for (const handler of handlers.get(type) ?? []) handler(payload)
     },
   }
 }

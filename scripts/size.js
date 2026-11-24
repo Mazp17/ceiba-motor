@@ -13,7 +13,9 @@ for (const [name, budget] of Object.entries(BUDGETS)) {
   const size = gzipSync(Buffer.concat(js.map((file) => readFileSync(`${dir}/${file}`)))).length
   const deps = Object.keys(JSON.parse(readFileSync(`packages/${name}/package.json`, 'utf8')).dependencies ?? {})
   const ok = size <= budget && !(name === 'core' && deps.length)
-  console.log(`${ok ? 'ok  ' : 'FAIL'} @ceiba/${name}: ${size} B gzip of ${budget} B (${Math.round((size / budget) * 100)}%), ${deps.length} dependencies`)
+  console.log(
+    `${ok ? 'ok  ' : 'FAIL'} @ceiba/${name}: ${size} B gzip of ${budget} B (${Math.round((size / budget) * 100)}%), ${deps.length} dependencies`,
+  )
   failed ||= !ok
 }
 process.exit(failed ? 1 : 0)

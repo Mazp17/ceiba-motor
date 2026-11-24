@@ -15,6 +15,8 @@ const UNLOAD_RADIUS = 5
 // the load and unload radius gets evicted in dense areas.
 const GPU_BUDGET = 1.8e6
 const RAM_BUDGET = 3.5e6
+// Low detail out to 8 chunks (2 km). The worst 21x21 window of the default world needs 5 MB of GPU and 10.5 MB of RAM.
+const LOD = { loadRadius: 8, unloadRadius: 10, gpuBudget: 6e6, ramBudget: 12e6 }
 
 export default {
   async setup({ engine, babylon, canvas }) {
@@ -32,7 +34,7 @@ export default {
     const camera = new FreeCamera('camera', new Vector3(chunkSize / 2, 40, chunkSize / 2), scene)
     camera.setTarget(new Vector3(chunkSize, 20, chunkSize))
     camera.minZ = 0.5
-    camera.maxZ = chunkSize * (UNLOAD_RADIUS + 1)
+    camera.maxZ = chunkSize * (LOD.unloadRadius + 1)
     camera.speed = 8
     camera.keysUp = [87] // W
     camera.keysDown = [83] // S
@@ -50,16 +52,39 @@ export default {
     }
     canvas.addEventListener('click', lock)
 
-    const streaming = streamingPlugin({
-      scene,
-      manifestUrl: MANIFEST_URL,
-      focus: () => camera.position,
-      gpuBudget: GPU_BUDGET,
-      ramBudget: RAM_BUDGET,
-      loadRadius: LOAD_RADIUS,
-      unloadRadius: UNLOAD_RADIUS,
-    })
-    await engine.use(streaming)
+    // Radii and budgets are fixed when the plugin is created: the `radius` actions dispose it and mount a new one.
+    let radius = LOAD_RADIUS
+    // The budgets grow with the area, from the ones tuned for the default radius.
+    const budget = (base: number) => base * ((2 * radius + 1) / (2 * LOAD_RADIUS + 1)) ** 2
+    const mount = async (origin?: { cx: number; cz: number }) => {
+      const plugin = streamingPlugin({
+        scene,
+        manifestUrl: MANIFEST_URL,
+        focus: () => camera.position,
+        gpuBudget: budget(GPU_BUDGET),
+        ramBudget: budget(RAM_BUDGET),
+        loadRadius: radius,
+        unloadRadius: radius + UNLOAD_RADIUS - LOAD_RADIUS,
+        lod: LOD,
+        // The camera position is relative to the origin the old plugin left.
+        ...(origin && { origin }),
+      })
+      await engine.use(plugin)
+      return plugin
+    }
+    let streaming = await mount()
+    // A disposed plugin throws on `streamer`; the old streamer stays readable (and empty) during a remount.
+    let streamer = streaming.streamer
+    let remounting = false
+    const setRadius = async (value: number) => {
+      if (remounting || value < 1 || value >= LOD.loadRadius) return
+      remounting = true
+      radius = value
+      await streaming.dispose()
+      streaming = await mount(streamer.origin)
+      streamer = streaming.streamer
+      remounting = false
+    }
     // The plugin moves the chunks; the camera is ours to move.
     engine.events.on('streaming:originShift', ({ delta }) => {
       camera.position.x += delta.x
@@ -71,7 +96,7 @@ export default {
       name: 'world:bounds',
       phase: 'update',
       update() {
-        const { origin } = streaming.streamer
+        const { origin } = streamer
         const { position } = camera
         position.x = Math.min(Math.max(position.x, (min.x - origin.cx) * chunkSize), (max.x - origin.cx) * chunkSize)
         position.z = Math.min(Math.max(position.z, (min.z - origin.cz) * chunkSize), (max.z - origin.cz) * chunkSize)
@@ -85,12 +110,23 @@ export default {
     const debug = debugPlugin({
       renderStats: babylonStats(scene),
       streaming: {
-        streamer: streaming.streamer,
+        // Getters: the overlay reads these every frame, and a remount changes them.
+        get streamer() {
+          return streamer
+        },
         chunkSize,
-        gpuBudget: GPU_BUDGET,
-        ramBudget: RAM_BUDGET,
-        loadRadius: LOAD_RADIUS,
-        unloadRadius: UNLOAD_RADIUS,
+        get gpuBudget() {
+          return budget(GPU_BUDGET)
+        },
+        get ramBudget() {
+          return budget(RAM_BUDGET)
+        },
+        get loadRadius() {
+          return radius
+        },
+        get unloadRadius() {
+          return radius + UNLOAD_RADIUS - LOAD_RADIUS
+        },
         focus: () => ({ x: camera.position.x, z: camera.position.z, heading: camera.rotation.y }),
       },
     })
@@ -102,9 +138,11 @@ export default {
     debug.addAction('slower', () => {
       camera.speed /= 2
     })
+    debug.addAction('radius +', () => void setRadius(radius + 1))
+    debug.addAction('radius -', () => void setRadius(radius - 1))
     // Anywhere in the world: the recovery-from-a-jump case of the stress test.
     debug.addAction('teleport', () => {
-      const { origin } = streaming.streamer
+      const { origin } = streamer
       camera.position.x = (min.x + Math.random() * (max.x - min.x) - origin.cx) * chunkSize
       camera.position.z = (min.z + Math.random() * (max.z - min.z) - origin.cz) * chunkSize
     })

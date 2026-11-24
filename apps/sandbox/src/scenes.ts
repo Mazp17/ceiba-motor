@@ -20,4 +20,5 @@ export interface SandboxScene {
 /** `?scene=<key>`. Each scene is its own chunk, loaded on demand. */
 export const scenes: Record<string, () => Promise<{ default: SandboxScene }>> = {
   hello: () => import('./scenes/hello.ts'),
+  world: () => import('./scenes/world.ts'),
 }

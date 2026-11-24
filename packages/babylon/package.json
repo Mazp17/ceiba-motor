@@ -1,7 +1,7 @@
 {
   "name": "@ceiba/babylon",
   "version": "0.0.0",
-  "description": "Babylon.js rendering driven by the Ceiba engine loop: WebGPU or WebGL2 engine, scene and render system",
+  "description": "Babylon.js for the Ceiba engine: WebGPU or WebGL2 engine, scene and render system, and the chunk streaming adapter",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -24,10 +24,14 @@
   },
   "peerDependencies": {
     "@babylonjs/core": "^9.37.1",
-    "@ceiba/core": "workspace:^"
+    "@babylonjs/loaders": "^9.37.1",
+    "@ceiba/core": "workspace:^",
+    "@ceiba/streaming": "workspace:^"
   },
   "devDependencies": {
     "@babylonjs/core": "^9.37.1",
-    "@ceiba/core": "workspace:^"
+    "@babylonjs/loaders": "^9.37.1",
+    "@ceiba/core": "workspace:^",
+    "@ceiba/streaming": "workspace:^"
   }
 }

@@ -17,12 +17,12 @@ Capa de mundo abierto para juegos en el navegador, sobre [Babylon.js](https://ww
 | Paquete | Estado | Qué hace |
 | --- | --- | --- |
 | `@ceiba/core` | listo | Loop de paso fijo, fases, aislamiento de errores, eventos, reloj, logger, plugins |
-| `@ceiba/babylon` | listo | Motor de Babylon (WebGPU o WebGL2) y escena, renderizados desde el loop del core |
-| `@ceiba/streaming` | lógica pura lista, falta el adaptador a Babylon | Grilla de chunks, cola de prioridad, presupuestos de memoria, LRU |
+| `@ceiba/babylon` | listo | Motor de Babylon (WebGPU o WebGL2) y escena, renderizados desde el loop del core; adaptador de streaming que carga los chunks `.glb` en la escena |
+| `@ceiba/streaming` | listo (el adaptador a Babylon vive en `@ceiba/babylon`) | Grilla de chunks, cola de prioridad, presupuestos de memoria, LRU |
 | `@ceiba/physics` | pendiente | Colisionadores por chunk y vehículo sobre Havok |
 | `@ceiba/input` | pendiente | Mapeo de acciones sobre teclado, mouse y gamepad |
 | `@ceiba/save` | pendiente | Estado a IndexedDB con versionado de esquema |
-| `@ceiba/debug` | pendiente | Overlay de rendimiento y visualizador de chunks |
+| `@ceiba/debug` | listo, sin verificar visualmente | Overlay de rendimiento, presupuestos y mapa de chunks, sistemas deshabilitados, acciones de debug |
 
 ## Uso
 

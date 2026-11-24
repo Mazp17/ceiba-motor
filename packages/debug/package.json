@@ -1,0 +1,47 @@
+{
+  "name": "@ceiba/debug",
+  "version": "0.0.0",
+  "description": "Debug overlay for the Ceiba engine: performance counters, streaming budgets and chunk map, disabled systems and debug actions",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mazp17/ceiba-motor.git",
+    "directory": "packages/debug"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./babylon": {
+      "types": "./dist/babylon.d.ts",
+      "default": "./dist/babylon.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@babylonjs/core": "^9.37.1",
+    "@ceiba/core": "workspace:^",
+    "@ceiba/streaming": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@babylonjs/core": {
+      "optional": true
+    },
+    "@ceiba/streaming": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@babylonjs/core": "^9.37.1",
+    "@ceiba/core": "workspace:^",
+    "@ceiba/streaming": "workspace:^"
+  }
+}

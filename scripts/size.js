@@ -6,9 +6,12 @@ import { gzipSync } from 'node:zlib'
 // Bytes, gzip, of the package's own code: what it imports (Babylon) is not counted.
 // No package bundles anything, so none may have `dependencies`: Babylon and other @ceiba packages
 // are peers, installed once by the game.
-// streaming measured 3.9 kB as pure logic; 8 kB leaves room for its thin Babylon adapter.
-// babylon measured 1.5 kB when written; it is glue, so twice that means it stopped being thin.
-const BUDGETS = { core: 10_000, streaming: 8_000, babylon: 3_000 }
+// streaming measured 3.9 kB as pure logic; twice that means it stopped being simple.
+// babylon measured 4.1 kB: 1.5 kB of render glue plus 2.6 kB of streaming adapter (chunk loader and
+// plugin). Both are glue, so 6 kB is the same "one and a half times what it took" alarm as before.
+// debug measured 5.5 kB when written, most of it DOM and canvas glue. Games load it with a dynamic
+// import() in debug sessions only, so 10 kB leaves room for more panels without it becoming a UI kit.
+const BUDGETS = { core: 10_000, streaming: 8_000, babylon: 6_000, debug: 10_000 }
 // Pure logic: these must have no peers either.
 const NO_PEERS = ['core', 'streaming']
 

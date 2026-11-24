@@ -1,3 +1,5 @@
 export type { Backend } from './backend.ts'
 export type { BabylonOptions, BabylonPlugin } from './plugin.ts'
 export { babylonPlugin } from './plugin.ts'
+export type { StreamingOptions, StreamingPlugin } from './streaming.ts'
+export { streamingPlugin } from './streaming.ts'

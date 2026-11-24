@@ -8,8 +8,11 @@
   },
   "dependencies": {
     "@babylonjs/core": "^9.37.1",
+    "@babylonjs/loaders": "^9.37.1",
     "@ceiba/babylon": "workspace:*",
-    "@ceiba/core": "workspace:*"
+    "@ceiba/core": "workspace:*",
+    "@ceiba/debug": "workspace:*",
+    "@ceiba/streaming": "workspace:*"
   },
   "devDependencies": {
     "vite": "^8.3.8"

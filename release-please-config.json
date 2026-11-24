@@ -5,6 +5,7 @@
   "packages": {
     "packages/core": { "release-type": "node", "component": "core", "initial-version": "0.0.1" },
     "packages/babylon": { "release-type": "node", "component": "babylon", "initial-version": "0.0.1" },
-    "packages/streaming": { "release-type": "node", "component": "streaming", "initial-version": "0.0.1" }
+    "packages/streaming": { "release-type": "node", "component": "streaming", "initial-version": "0.0.1" },
+    "packages/debug": { "release-type": "node", "component": "debug", "initial-version": "0.0.1" }
   }
 }

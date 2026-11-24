@@ -21,7 +21,8 @@ const manifest = await generateWorld(values.out, {
   chunkSize: Number(values['chunk-size']),
   seed: Number(values.seed),
 })
-const bytes = manifest.chunks.reduce((sum, chunk) => sum + chunk.ramBytes - chunk.gpuBytes, 0)
+const fileBytes = (asset?: { ramBytes: number; gpuBytes: number }) => (asset ? asset.ramBytes - asset.gpuBytes : 0)
+const bytes = manifest.chunks.reduce((sum, chunk) => sum + fileBytes(chunk) + fileBytes(chunk.lod), 0)
 console.log(
   `${manifest.chunks.length} chunks (${size * size - manifest.chunks.length} holes), ` +
     `${(bytes / 1e6).toFixed(1)} MB, ${((size * manifest.chunkSize) / 1000).toFixed(1)} km across, ` +

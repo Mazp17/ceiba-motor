@@ -3,7 +3,7 @@
 Decides which chunks of a large world are loaded around the player: chunk grid and floating
 origin, per-chunk lifecycle, load priority, GPU and RAM budgets with LRU eviction. Pure logic:
 no Babylon, no DOM, no network, no timers, no dependencies. It talks to the outside through a
-loader you inject; the Babylon adapter is a separate, later piece.
+loader you inject; the Babylon adapter is `streamingPlugin` in `@ceiba/babylon`.
 
 > Early development. The API changes without notice and the package is not on npm yet.
 

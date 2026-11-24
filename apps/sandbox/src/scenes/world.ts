@@ -2,6 +2,7 @@
 // Click to capture the mouse, WASD to move, Q/E down/up, Esc to release, ` to hide the overlay.
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera.js'
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight.js'
+import { PointLight } from '@babylonjs/core/Lights/pointLight.js'
 import { Color4 } from '@babylonjs/core/Maths/math.color.js'
 import { Vector3 } from '@babylonjs/core/Maths/math.vector.js'
 import { streamingPlugin } from '@ceiba/babylon'
@@ -103,12 +104,13 @@ export default {
       },
     })
 
-    const [{ debugPlugin }, { babylonStats }] = await Promise.all([
+    const [{ debugPlugin }, { babylonLights, babylonStats }] = await Promise.all([
       import('@ceiba/debug'),
       import('@ceiba/debug/babylon'),
     ])
     const debug = debugPlugin({
       renderStats: babylonStats(scene),
+      lighting: babylonLights(scene),
       streaming: {
         // Getters: the overlay reads these every frame, and a remount changes them.
         get streamer() {
@@ -145,6 +147,27 @@ export default {
       const { origin } = streamer
       camera.position.x = (min.x + Math.random() * (max.x - min.x) - origin.cx) * chunkSize
       camera.position.z = (min.z + Math.random() * (max.z - min.z) - origin.cz) * chunkSize
+    })
+
+    // Four per click: with the hemispheric light that is past the 4 a default material takes, so the
+    // lights panel warns. Babylon does not cull lights by range: each one counts for every mesh.
+    const lamps: PointLight[] = []
+    debug.addAction('lights +', () => {
+      for (let i = 0; i < 4; i++) {
+        const offset = new Vector3(Math.random() * 60 - 30, Math.random() * 10 - 15, Math.random() * 60 - 30)
+        const lamp = new PointLight(`lamp ${lamps.length}`, camera.position.add(offset), scene)
+        lamp.range = 60
+        lamps.push(lamp)
+      }
+    })
+    debug.addAction('lights -', () => {
+      for (const lamp of lamps.splice(0)) lamp.dispose()
+    })
+    engine.events.on('streaming:originShift', ({ delta }) => {
+      for (const lamp of lamps) {
+        lamp.position.x += delta.x
+        lamp.position.z += delta.z
+      }
     })
 
     return () => {

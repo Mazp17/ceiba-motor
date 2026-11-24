@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/*.md"]
+    "includes": ["**", "!**/*.md", "!.release-please-manifest.json"]
   },
   "formatter": {
     "indentStyle": "space",

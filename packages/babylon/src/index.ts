@@ -1,4 +1,5 @@
 export type { Backend } from './backend.ts'
+export type { MeshoptDecoder } from './chunkLoader.ts'
 export type { BabylonOptions, BabylonPlugin } from './plugin.ts'
 export { babylonPlugin } from './plugin.ts'
 export type { StreamingOptions, StreamingPlugin } from './streaming.ts'

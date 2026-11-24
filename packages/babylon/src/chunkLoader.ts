@@ -2,7 +2,13 @@ import type { AssetContainer } from '@babylonjs/core/assetContainer.js'
 import { LoadAssetContainerAsync } from '@babylonjs/core/Loading/sceneLoader.js'
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode.js'
 import type { Scene } from '@babylonjs/core/scene.js'
-import { RegisterGLTF2Loader } from '@babylonjs/loaders/glTF/2.0/glTFLoader.pure.js'
+import { RegisterEXT_texture_webp } from '@babylonjs/loaders/glTF/2.0/Extensions/EXT_texture_webp.pure.js'
+import { RegisterKHR_mesh_quantization } from '@babylonjs/loaders/glTF/2.0/Extensions/KHR_mesh_quantization.pure.js'
+import { GLTFLoader, RegisterGLTF2Loader } from '@babylonjs/loaders/glTF/2.0/glTFLoader.pure.js'
+import {
+  registerGLTFExtension,
+  unregisterGLTFExtension,
+} from '@babylonjs/loaders/glTF/2.0/glTFLoaderExtensionRegistry.js'
 import { RegisterGLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader.pure.js'
 import { type ChunkLoader, chunkKey, type ManifestChunk } from '@ceiba/streaming'
 
@@ -13,8 +19,58 @@ export interface ChunkHandle {
   container: AssetContainer
 }
 
+/** What decodes Meshopt-compressed chunks: `MeshoptDecoder` of the `meshoptimizer` package, or the same method. */
+export interface MeshoptDecoder {
+  decodeGltfBufferAsync(
+    count: number,
+    stride: number,
+    source: Uint8Array,
+    mode: string,
+    filter?: string,
+  ): Promise<Uint8Array>
+}
+
 const CACHE = 'ceiba-chunks'
 const HASH = 'x-ceiba-hash'
+const MESHOPT = 'EXT_meshopt_compression'
+
+// Our own loader extension instead of Babylon's: that one downloads its decoder from the Babylon CDN and has
+// no public way to be handed one. Registered for every glTF load of the page, like Babylon's.
+function registerMeshopt(decoder: MeshoptDecoder) {
+  unregisterGLTFExtension(MESHOPT)
+  registerGLTFExtension(MESHOPT, true, (loader) => {
+    const decoded = new WeakMap<object, Promise<ArrayBufferView>>()
+    return {
+      name: MESHOPT,
+      enabled: true,
+      dispose() {},
+      loadBufferViewAsync: (context, view) =>
+        GLTFLoader.LoadExtensionAsync<
+          { buffer: number; byteOffset?: number; byteLength: number; byteStride: number; count: number; mode: string; filter?: string }, // biome-ignore format: one line
+          ArrayBufferView
+        >(context, view, MESHOPT, (at, { buffer, byteOffset = 0, byteLength, byteStride, count, mode, filter }) => {
+          const data = loader.gltf.buffers?.[buffer]
+          if (!data) throw new Error(`${at}: buffer ${buffer} does not exist`)
+          let result = decoded.get(view)
+          if (!result) {
+            result = loader
+              .loadBufferAsync(`/buffers/${buffer}`, data, byteOffset, byteLength)
+              .then(({ buffer, byteOffset, byteLength }) =>
+                decoder.decodeGltfBufferAsync(
+                  count,
+                  byteStride,
+                  new Uint8Array(buffer, byteOffset, byteLength),
+                  mode,
+                  filter,
+                ),
+              )
+            decoded.set(view, result)
+          }
+          return result
+        }),
+    }
+  })
+}
 
 // Internal: `streamingPlugin` is the public way in. `place` positions a new root; `handles` is every chunk in the
 // scene; roots are named `<prefix>:<cx>,<cz>`.
@@ -23,11 +79,16 @@ export function createChunkLoader(
   manifestUrl: string,
   place: (handle: ChunkHandle) => void,
   prefix = 'chunk',
+  meshopt?: MeshoptDecoder,
 ): ChunkLoader<ChunkHandle, Uint8Array> & { handles: Set<ChunkHandle> } {
   // The pure modules plus an explicit, idempotent registration instead of the side-effect import
   // `@babylonjs/loaders/glTF/2.0/glTFLoader.js`: this package stays `sideEffects: false` for real.
   RegisterGLTF2Loader()
   RegisterGLTFFileLoader()
+  // What the asset pipeline writes: quantized vertices, WebP textures and Meshopt compression.
+  RegisterKHR_mesh_quantization()
+  RegisterEXT_texture_webp()
+  if (meshopt) registerMeshopt(meshopt)
   const handles = new Set<ChunkHandle>()
   // No Cache API (insecure context, Node) or a browser that refuses it: plain fetch.
   const cache: Promise<Cache | undefined> = (async () => globalThis.caches?.open(CACHE))().catch(() => undefined)
@@ -79,6 +140,8 @@ export function createChunkLoader(
  * GPU: vertex attributes and indices as uploaded, plus every texture as uncompressed RGBA8 with mipmaps
  * (too high for compressed textures). RAM: the `.glb` itself, which stays alive because Babylon keeps
  * the geometry arrays, and they are views into it. Babylon's own objects are not counted.
+ * shortcut: a Meshopt chunk decodes into arrays outside the `.glb`, which are not counted here, so its RAM
+ * reads low by about its geometry bytes; add them if RAM budgets turn out too loose.
  */
 function measure(container: AssetContainer, bytes: Uint8Array) {
   let gpuBytes = 0

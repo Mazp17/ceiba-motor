@@ -243,6 +243,7 @@ installed.
 | `manifestUrl` | — | URL of the world manifest JSON |
 | `focus()` | — | Scene position (`{ x, z }`) the world streams around. Read every fixed step |
 | `velocity()` | derived from `focus()` | Speed of the focus in m/s, for load priority |
+| `meshopt` | none | Decoder for Meshopt-compressed chunks: `MeshoptDecoder` from `meshoptimizer/decoder` |
 | `gpuBudget`, `ramBudget` | — | Bytes. Passed to `createStreamer`, like the remaining options |
 
 Returns a `StreamingPlugin`: a core `Plugin` plus
@@ -255,9 +256,22 @@ Returns a `StreamingPlugin`: a core `Plugin` plus
 `install` rejects if the manifest cannot be fetched or is invalid, or if the plugin is already
 installed.
 
+Chunks written by the asset pipeline (`tools/pipeline`) are Meshopt-compressed. Babylon would fetch
+its decoder from the Babylon CDN; this package never does. Install `meshoptimizer` in the game and
+pass its decoder, which embeds the WebAssembly and is bundled with the game:
+
+```ts
+import { MeshoptDecoder } from 'meshoptimizer/decoder'
+
+streamingPlugin({ scene, manifestUrl, focus, gpuBudget, ramBudget, meshopt: MeshoptDecoder })
+```
+
+Quantized vertices (`KHR_mesh_quantization`) and WebP textures (`EXT_texture_webp`) load with no
+setup. KTX2 textures (`KHR_texture_basisu`) are not wired up yet.
+
 ### Types
 
-`BabylonPlugin`, `BabylonOptions`, `Backend`, `StreamingPlugin`, `StreamingOptions`.
+`BabylonPlugin`, `BabylonOptions`, `Backend`, `StreamingPlugin`, `StreamingOptions`, `MeshoptDecoder`.
 
 ## License
 

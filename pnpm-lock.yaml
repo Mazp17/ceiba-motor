@@ -174,7 +174,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: ^5.1.1
-        version: 5.1.1(vite@8.3.8)
+        version: 5.1.1(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2))
 
   apps/sandbox:
     dependencies:
@@ -190,9 +190,26 @@ importers:
     devDependencies:
       vite:
         specifier: ^8.3.8
-        version: 8.3.8
+        version: 8.3.8(@types/node@24.19.2)
 
   packages/babylon:
+    devDependencies:
+      '@babylonjs/core':
+        specifier: ^9.37.1
+        version: 9.37.1
+      '@babylonjs/loaders':
+        specifier: ^9.37.1
+        version: 9.37.2(@babylonjs/core@9.37.1)(babylonjs-gltf2interface@9.37.2)
+      '@ceiba/core':
+        specifier: workspace:^
+        version: link:../core
+      '@ceiba/streaming':
+        specifier: workspace:^
+        version: link:../streaming
+
+  packages/core: {}
+
+  packages/debug:
     devDependencies:
       '@babylonjs/core':
         specifier: ^9.37.1
@@ -200,15 +217,38 @@ importers:
       '@ceiba/core':
         specifier: workspace:^
         version: link:../core
-
-  packages/core: {}
+      '@ceiba/streaming':
+        specifier: workspace:^
+        version: link:../streaming
 
   packages/streaming: {}
+
+  tools/worldgen:
+    dependencies:
+      '@gltf-transform/core':
+        specifier: ^4.5.1
+        version: 4.5.1
+    devDependencies:
+      '@babylonjs/core':
+        specifier: ^9.37.1
+        version: 9.37.1
+      '@babylonjs/loaders':
+        specifier: ^9.37.1
+        version: 9.37.2(@babylonjs/core@9.37.1)(babylonjs-gltf2interface@9.37.2)
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.2
 
 packages:
 
   '@babylonjs/core@9.37.1':
     resolution: {integrity: sha512-OABdYAU5FvCGmIHj6zpfK+LTLJc8zUpKOhI0QNkDYyXy2P5ROA2dnUxfZCeR/TL1oNVnS/H4w/uUSt9GHDFZWQ==}
+
+  '@babylonjs/loaders@9.37.2':
+    resolution: {integrity: sha512-vz/MybqLd70+CWrbI/sFi1SLPlTupFfhv9MscPE/dSz7+wpZs2Ra5sDWnJymXEML1Zq2pE3HbnGyqy0t4R2e4w==}
+    peerDependencies:
+      '@babylonjs/core': ^9.0.0
+      babylonjs-gltf2interface: ^9.0.0
 
   '@biomejs/biome@2.6.8':
     resolution: {integrity: sha512-kqZUFvX6/aYQOmzfRN5ANcfNS9wLH4aHLWWP/dQKyhRZVoA6rdWszA7DGugFcxPbMiznUyVYyukVl+ExZN4PQA==}
@@ -287,6 +327,9 @@ packages:
 
   '@emnapi/wasi-threads@2.2.0':
     resolution: {integrity: sha512-JP7OYH38Q7+pyTAe14raZHLQIK7BDKbdwji+Xi3pcd/6QkJYQH3SX4wu6EplGrGJWRepoNzedfm0G3B9Z4e9Rw==}
+
+  '@gltf-transform/core@4.5.1':
+    resolution: {integrity: sha512-OWgBYssKHKoXMIrMb2N20jXqWRnMP9HdtcTFQBEAJtz4P+OOxx5fozl5eAeK7nktIs5uDE/lu4NbkE5VCZaR9g==}
 
   '@jridgewell/resolve-uri@3.1.3':
     resolution: {integrity: sha512-lhTtjtoEArWBjismtfS761S9Hlyn+nIZqOZVYoZ1Xn82PMNMVnk+jj/NhC4fAXGTs7ydONcJiR5vyQBTMDu27g==}
@@ -423,6 +466,9 @@ packages:
 
   '@types/estree@1.0.10':
     resolution: {integrity: sha512-lTyOMnOcmRBzdCv6/4zUZCrEhV0xrqQiUZBZtVcbmLHBXKLnN8q89v/wKRF/Q0HbwVsqbIG3o5HDoFl9sduM+g==}
+
+  '@types/node@24.19.2':
+    resolution: {integrity: sha512-93d49wCWJkCyN87MxLpNN6KXPCwFw7bVUg79mGUV1OS40JGWwVCr8n61DXCSqz7CV6/VfPkb7xec7uP2M+QHWQ==}
 
   '@typescript/typescript-aix-ppc64@7.0.2':
     resolution: {integrity: sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==}
@@ -562,6 +608,9 @@ packages:
     resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
     engines: {node: '>=12'}
 
+  babylonjs-gltf2interface@9.37.2:
+    resolution: {integrity: sha512-mzLL6vyBTgYRVJ1KFyk5o+ViSDGifUtBmad1hDOklkBLL5hlAp9SLPpgI4OU3BsYT7NYRvIGNeP1FYTMH5GNcg==}
+
   chai@6.3.0:
     resolution: {integrity: sha512-XWAtwJ6OHO+tj0EKCs0Y2UamnyOxseZWltU4x2U2wh8g4AigdjwvtUjvLP2tqkA/avxHEtzxNaqGq/YGNwckKg==}
     engines: {node: '>=18'}
@@ -691,6 +740,9 @@ packages:
     resolution: {integrity: sha512-RVHEU9/Pp1Fnjr/MpAJsZoADukCKhfIi15OunEYiGktIkYLkPVvC1sioWolGDS7XByMTx9m/IGbro0Js13zhnQ==}
     engines: {node: ^10 || ^12 || >=14}
 
+  property-graph@4.1.0:
+    resolution: {integrity: sha512-AvPcP7XECNWy4LGmFQ77k7un4lSKM4eS29PTvW4ck95uYeLxXPWJM7hLuBqK91FaHqCcgJvIUCuNJjjxKE7VKQ==}
+
   rolldown@1.2.19:
     resolution: {integrity: sha512-QIiV1J9d0pzN4jeeTH4sjPy0AZ6cAy2cG0ExeoE1+U8Rvj+hR3gYkokx0YbeUNGlZqiQJJ2utcETe0oKXwzsuA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -722,6 +774,9 @@ packages:
     resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
     engines: {node: '>=16.20.0'}
     hasBin: true
+
+  undici-types@7.24.6:
+    resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
 
   vite@8.3.8:
     resolution: {integrity: sha512-LzOn3h9rG/0vhLdXrV4yJ4QFA9eEoqCl+Yx+kGJd7aB9w6nfNgVHKSYwLPZUHrz4ZGa+t+kXjV9itvcHDLQouA==}
@@ -816,6 +871,11 @@ snapshots:
 
   '@babylonjs/core@9.37.1': {}
 
+  '@babylonjs/loaders@9.37.2(@babylonjs/core@9.37.1)(babylonjs-gltf2interface@9.37.2)':
+    dependencies:
+      '@babylonjs/core': 9.37.1
+      babylonjs-gltf2interface: 9.37.2
+
   '@biomejs/biome@2.6.8':
     optionalDependencies:
       '@biomejs/cli-android-arm64': 2.6.8
@@ -874,6 +934,10 @@ snapshots:
     dependencies:
       tslib: 2.9.1
     optional: true
+
+  '@gltf-transform/core@4.5.1':
+    dependencies:
+      property-graph: 4.1.0
 
   '@jridgewell/resolve-uri@3.1.3': {}
 
@@ -961,6 +1025,10 @@ snapshots:
 
   '@types/estree@1.0.10': {}
 
+  '@types/node@24.19.2':
+    dependencies:
+      undici-types: 7.24.6
+
   '@typescript/typescript-aix-ppc64@7.0.2':
     optional: true
 
@@ -1021,18 +1089,20 @@ snapshots:
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
 
-  '@vitest/mocker@5.1.1(vite@8.3.8)':
+  '@vitest/mocker@5.1.1(vite@8.3.8(@types/node@24.19.2))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.1.1
       estree-walker: 3.0.3
       magic-string: 1.4.5
     optionalDependencies:
-      vite: 8.3.8
+      vite: 8.3.8(@types/node@24.19.2)
 
   '@vitest/spy@5.1.1': {}
 
   assertion-error@2.0.1: {}
+
+  babylonjs-gltf2interface@9.37.2: {}
 
   chai@6.3.0: {}
 
@@ -1120,6 +1190,8 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.4
 
+  property-graph@4.1.0: {}
+
   rolldown@1.2.19:
     dependencies:
       '@oxc-project/types': 0.156.0
@@ -1181,7 +1253,9 @@ snapshots:
       '@typescript/typescript-win32-arm64': 7.0.2
       '@typescript/typescript-win32-x64': 7.0.2
 
-  vite@8.3.8:
+  undici-types@7.24.6: {}
+
+  vite@8.3.8(@types/node@24.19.2):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -1189,12 +1263,13 @@ snapshots:
       rolldown: 1.2.19
       tinyglobby: 0.2.17
     optionalDependencies:
+      '@types/node': 24.19.2
       fsevents: 2.3.3
 
-  vitest@5.1.1(vite@8.3.8):
+  vitest@5.1.1(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.1.1(vite@8.3.8)
+      '@vitest/mocker': 5.1.1(vite@8.3.8(@types/node@24.19.2))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -1205,8 +1280,10 @@ snapshots:
       tinybench: 6.2.4
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 8.3.8
+      vite: 8.3.8(@types/node@24.19.2)
       why-is-node-running: 3.2.1
+    optionalDependencies:
+      '@types/node': 24.19.2
     transitivePeerDependencies:
       - msw
 

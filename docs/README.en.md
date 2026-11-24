@@ -22,7 +22,7 @@ Open-world layer for browser games on top of [Babylon.js](https://www.babylonjs.
 | `@ceiba/physics` | pending | Per-chunk colliders and vehicle on Havok |
 | `@ceiba/input` | pending | Action mapping over keyboard, mouse and gamepad |
 | `@ceiba/save` | pending | State to IndexedDB with schema versioning |
-| `@ceiba/debug` | pending | Performance overlay and chunk visualizer |
+| `@ceiba/debug` | ready, not visually verified | Performance overlay, budgets and chunk map, disabled systems, debug actions |
 
 ## Usage
 

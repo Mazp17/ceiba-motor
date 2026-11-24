@@ -22,7 +22,7 @@ Capa de mundo abierto para juegos en el navegador, sobre [Babylon.js](https://ww
 | `@ceiba/physics` | pendiente | Colisionadores por chunk y vehículo sobre Havok |
 | `@ceiba/input` | pendiente | Mapeo de acciones sobre teclado, mouse y gamepad |
 | `@ceiba/save` | pendiente | Estado a IndexedDB con versionado de esquema |
-| `@ceiba/debug` | pendiente | Overlay de rendimiento y visualizador de chunks |
+| `@ceiba/debug` | listo, sin verificar visualmente | Overlay de rendimiento, presupuestos y mapa de chunks, sistemas deshabilitados, acciones de debug |
 
 ## Uso
 

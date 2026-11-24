@@ -1,6 +1,21 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "noEmit": true },
+  "compilerOptions": {
+    "noEmit": true
+  },
   "include": ["src"],
-  "references": [{ "path": "../../packages/core" }, { "path": "../../packages/babylon" }]
+  "references": [
+    {
+      "path": "../../packages/core"
+    },
+    {
+      "path": "../../packages/streaming"
+    },
+    {
+      "path": "../../packages/babylon"
+    },
+    {
+      "path": "../../packages/debug"
+    }
+  ]
 }

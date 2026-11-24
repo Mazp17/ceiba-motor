@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@12.6.0",
   "scripts": {
-    "dev": "pnpm --filter @ceiba/sandbox dev",
+    "dev": "node -e \"process.exit(require('fs').existsSync('apps/sandbox/public/world/manifest.json')?0:1)\" || pnpm world; pnpm --filter @ceiba/sandbox dev",
     "build": "tsc -b",
     "test": "vitest run",
     "lint": "biome check",

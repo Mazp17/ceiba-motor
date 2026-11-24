@@ -181,12 +181,21 @@ importers:
       '@babylonjs/core':
         specifier: ^9.37.1
         version: 9.37.1
+      '@babylonjs/loaders':
+        specifier: ^9.37.1
+        version: 9.37.2(@babylonjs/core@9.37.1)(babylonjs-gltf2interface@9.37.2)
       '@ceiba/babylon':
         specifier: workspace:*
         version: link:../../packages/babylon
       '@ceiba/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@ceiba/debug':
+        specifier: workspace:*
+        version: link:../../packages/debug
+      '@ceiba/streaming':
+        specifier: workspace:*
+        version: link:../../packages/streaming
     devDependencies:
       vite:
         specifier: ^8.3.8

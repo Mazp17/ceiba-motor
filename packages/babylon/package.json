@@ -1,6 +1,6 @@
 {
   "name": "@ceiba/babylon",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Babylon.js for the Ceiba engine: WebGPU or WebGL2 engine, scene and render system, and the chunk streaming adapter",
   "license": "MIT",
   "repository": {

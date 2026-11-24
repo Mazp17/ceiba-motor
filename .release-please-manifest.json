@@ -1,6 +1,6 @@
 {
   "packages/core": "0.0.1",
-  "packages/babylon": "0.0.0",
-  "packages/streaming": "0.0.0",
-  "packages/debug": "0.0.0"
+  "packages/babylon": "0.0.1",
+  "packages/streaming": "0.0.1",
+  "packages/debug": "0.0.1"
 }

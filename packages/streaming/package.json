@@ -1,6 +1,6 @@
 {
   "name": "@ceiba/streaming",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Chunk grid, load priority, memory budgets and LRU eviction for streaming a large world in the Ceiba engine",
   "license": "MIT",
   "repository": {

@@ -15,6 +15,13 @@ const chunk = (cx: number, hash = 'a'): ManifestChunk => {
 }
 const manifest: WorldManifest = { version: 1, chunkSize: 100, chunks: [0, 1, 2, 3, 4, 5].map((cx) => chunk(cx)) }
 
+// Chunk 2 has no lod: it only ever shows in full detail.
+const withLod: WorldManifest = {
+  ...manifest,
+  chunks: manifest.chunks.map((c) => (c.cx === 2 ? c : { ...c, lod: { ...c, url: `chunks/${c.cx}_0.lod.glb` } })),
+}
+let served = manifest
+
 const live = new AbortController().signal
 const newScene = () => new Scene(new NullEngine())
 /** What a chunk adds to a scene. All zero means nothing is left. */
@@ -35,13 +42,16 @@ function stubFetch() {
     init?.signal?.throwIfAborted()
     fetched.push(url)
     if (url.endsWith('missing.glb')) return new Response(null, { status: 404 })
-    return url.endsWith('.json') ? Response.json(manifest) : new Response(glb.slice())
+    return url.endsWith('.json') ? Response.json(served) : new Response(glb.slice())
   }
   vi.stubGlobal('fetch', fetch)
   return fetched
 }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  served = manifest
+})
 
 test('decode hangs the chunk from one root, placed by the caller, and unload frees everything', async () => {
   stubFetch()
@@ -127,7 +137,7 @@ test('a Cache API that throws falls back to plain fetch', async () => {
   expect(fetched.length).toBe(2)
 })
 
-async function installPlugin() {
+async function installPlugin(lod?: { loadRadius: number; unloadRadius: number }) {
   const fetched = stubFetch()
   const scene = newScene()
   const core = createEngine({ fixedDt: 0.01, logLevel: 'silent' })
@@ -141,6 +151,7 @@ async function installPlugin() {
     ramBudget: 1e6,
     loadRadius: 1,
     unloadRadius: 2,
+    ...(lod && { lod: { ...lod, gpuBudget: 1e6, ramBudget: 1e6 } }),
   })
   await core.use(plugin)
   let now = 0
@@ -188,6 +199,37 @@ test('an origin shift moves every root and emits the delta and the new origin', 
   expect(shifts).toEqual([{ delta: { x: -300, z: 0 }, origin: { cx: 3, cz: 0 } }])
   expect(plugin.streamer.origin).toEqual({ cx: 3, cz: 0 })
   expect(focus).toEqual({ x: 50, z: 50 })
+})
+
+test('lod chunks fill a wider ring, hidden while their full detail is in the scene', async () => {
+  served = withLod
+  const { scene, core, focus, plugin, roots, step } = await installPlugin({ loadRadius: 3, unloadRadius: 4 })
+  core.events.on('streaming:originShift', ({ delta }) => {
+    focus.x += delta.x
+  })
+  /** `<cx>` of every visible root, by kind, once the lod ring has `count` chunks. */
+  const shown = async (count: number) => {
+    await roots()
+    return vi.waitFor(() => {
+      step()
+      const all = scene.transformNodes.filter((node) => !node.parent)
+      expect(all.filter((node) => node.name.startsWith('lod:'))).toHaveLength(count)
+      return all
+        .filter((node) => node.isEnabled())
+        .map((node) => node.name.replace(',0', ''))
+        .sort()
+    })
+  }
+  // Focus in chunk 0: detail for 0 and 1, low detail for 0, 1 and 3 (chunk 2 has none); 0 and 1 are covered.
+  expect(await shown(3)).toEqual(['chunk:0', 'chunk:1', 'lod:3'])
+  // Focus in chunk 3 (the origin shifts): detail for 2, 3 and 4; chunk 1 falls back to its low detail.
+  focus.x = 350
+  expect(await shown(5)).toEqual(['chunk:1', 'chunk:2', 'chunk:3', 'chunk:4', 'lod:0', 'lod:5'])
+  expect(plugin.streamer.origin).toEqual({ cx: 3, cz: 0 })
+  const x = (name: string) => scene.getTransformNodeByName(name)?.position.x
+  expect([x('lod:0,0'), x('lod:5,0'), x('chunk:3,0')]).toEqual([-300, 200, 0])
+  await plugin.dispose()
+  expect(contents(scene)).toEqual([0, 0, 0, 0, 0])
 })
 
 test('overBudget is emitted when it changes', async () => {

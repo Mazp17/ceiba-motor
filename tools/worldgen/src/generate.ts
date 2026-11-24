@@ -3,7 +3,12 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Document, NodeIO } from '@gltf-transform/core'
 // Streaming by source: the tool runs with no build, and the package's exports point at its dist.
-import { type ManifestChunk, validateManifest, type WorldManifest } from '../../../packages/streaming/src/index.ts'
+import {
+  type ChunkAsset,
+  type ManifestChunk,
+  validateManifest,
+  type WorldManifest,
+} from '../../../packages/streaming/src/index.ts'
 
 export interface WorldOptions {
   /** Side of the world, in chunks. The world is centred on chunk (0, 0). */
@@ -24,6 +29,8 @@ export const MARKER_COLOR: Vec3 = [1, 0, 0.5]
 const BLOCK = 4
 const MAX_BUILDINGS = 48
 const HOLE_CHANCE = 0.03
+/** The low-detail chunk keeps the ground and the buildings at least this tall, in metres. */
+export const LOD_MIN_HEIGHT = 25
 
 /** Hashes integers to [0, 1). */
 function hash(...values: number[]): number {
@@ -56,12 +63,14 @@ export function isHole(cx: number, cz: number, seed: number): boolean {
 /**
  * Builds one chunk as a .glb. Geometry is described in the chunk's scene frame (x and z in
  * [0, chunkSize], y up) and written with x negated: Babylon's glTF loader mirrors x when it loads
- * into a left-handed scene, which puts it back.
+ * into a left-handed scene, which puts it back. `lod` builds the low-detail version: the same ground
+ * and tall buildings, without the marker and the small buildings.
  */
 export async function buildChunk(
   cx: number,
   cz: number,
   { chunkSize, seed }: Omit<WorldOptions, 'size'>,
+  lod = false,
 ): Promise<{ glb: Uint8Array; gpuBytes: number }> {
   const positions: number[] = []
   const normals: number[] = []
@@ -105,8 +114,10 @@ export async function buildChunk(
 
   // Orientation marker: a post near the minimum corner, with an arm at the top pointing along +x.
   const { x, z, height } = MARKER
-  box([x - 0.5, 0, z - 0.5], [x + 0.5, height, z + 0.5], MARKER_COLOR)
-  box([x + 0.5, height - 2, z - 0.5], [x + 6, height, z + 0.5], MARKER_COLOR)
+  if (!lod) {
+    box([x - 0.5, 0, z - 0.5], [x + 0.5, height, z + 0.5], MARKER_COLOR)
+    box([x + 0.5, height - 2, z - 0.5], [x + 6, height, z + 0.5], MARKER_COLOR)
+  }
 
   const density = hash(seed, Math.floor(cx / BLOCK), Math.floor(cz / BLOCK), 3)
   const buildings = Math.floor(density ** 2 * MAX_BUILDINGS * (0.5 + random()))
@@ -117,7 +128,9 @@ export async function buildChunk(
     const x0 = 20 + (chunkSize - 20 - width) * random()
     const z0 = 20 + (chunkSize - 20 - depth) * random()
     const grey = 0.5 + 0.4 * random()
-    box([x0, 0, z0], [x0 + width, 4 + 80 * density * random(), z0 + depth], [grey, grey, grey * 0.9])
+    const top = 4 + 80 * density * random()
+    // Every random number is drawn either way, so both versions agree on what they share.
+    if (!lod || top >= LOD_MIN_HEIGHT) box([x0, 0, z0], [x0 + width, top, z0 + depth], [grey, grey, grey * 0.9])
   }
 
   const document = new Document()
@@ -144,7 +157,7 @@ export async function buildChunk(
   }
 }
 
-/** Writes `manifest.json` and `chunks/*.glb` into `out`, replacing a previous world there. */
+/** Writes `manifest.json` and, per chunk, `chunks/<cx>_<cz>.glb` and its `.lod.glb` into `out`, replacing a previous world there. */
 export async function generateWorld(out: string, options: WorldOptions): Promise<WorldManifest> {
   const { size, chunkSize, seed } = options
   if (!Number.isInteger(size) || size < 1) throw new Error('size must be a positive integer')
@@ -159,18 +172,19 @@ export async function generateWorld(out: string, options: WorldOptions): Promise
   for (let cz = min; cz < min + size; cz++) {
     for (let cx = min; cx < min + size; cx++) {
       if (isHole(cx, cz, seed)) continue
-      const { glb, gpuBytes } = await buildChunk(cx, cz, options)
-      const url = `chunks/${cx}_${cz}.glb`
-      writeFileSync(join(out, url), glb)
-      chunks.push({
-        cx,
-        cz,
-        url,
-        hash: createHash('sha256').update(glb).digest('hex').slice(0, 16),
-        gpuBytes,
-        // Upper bound: the fetched file plus a CPU-side copy of every buffer.
-        ramBytes: glb.byteLength + gpuBytes,
-      })
+      const asset = async (url: string, lod: boolean): Promise<ChunkAsset> => {
+        const { glb, gpuBytes } = await buildChunk(cx, cz, options, lod)
+        writeFileSync(join(out, url), glb)
+        return {
+          url,
+          hash: createHash('sha256').update(glb).digest('hex').slice(0, 16),
+          gpuBytes,
+          // Upper bound: the fetched file plus a CPU-side copy of every buffer.
+          ramBytes: glb.byteLength + gpuBytes,
+        }
+      }
+      const detail = await asset(`chunks/${cx}_${cz}.glb`, false)
+      chunks.push({ cx, cz, ...detail, lod: await asset(`chunks/${cx}_${cz}.lod.glb`, true) })
     }
   }
 

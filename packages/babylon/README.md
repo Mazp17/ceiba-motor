@@ -62,7 +62,25 @@ the manifest's own URL and must be a `.glb` whose content, once loaded, spans x 
 glTF loader's own `__root__` (its handedness conversion) is kept below it.
 
 Every other option (`loadRadius`, `unloadRadius`, `maxConcurrent`, `shiftThreshold`, `origin`) is
-passed to `createStreamer`. `lodUrl` is not used: there are no low-detail placeholders yet.
+passed to `createStreamer`.
+
+### Low detail in the distance
+
+```ts
+streamingPlugin({
+  // ...
+  loadRadius: 3,
+  unloadRadius: 5,
+  lod: { loadRadius: 8, unloadRadius: 10, gpuBudget: 64e6, ramBudget: 32e6 },
+})
+```
+
+With `lod`, every chunk that has a `lod` asset in the manifest is also streamed in that wider ring,
+under a root named `lod:<cx>,<cz>`. A chunk's low detail is hidden while its full detail is in the
+scene and shown otherwise, so a chunk does not pop in from nothing and the distance is not empty.
+It stays loaded underneath, which is what makes the swap instant: budget it for the whole ring.
+The swap is a hard cut, there is no cross-fade. `streamer` and the `streaming:*` events report
+full-detail chunks only.
 
 ### Origin shifts
 

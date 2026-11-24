@@ -3,8 +3,10 @@ import type { Engine, Plugin } from '@ceiba/core'
 import {
   type ChunkId,
   type ChunkState,
+  chunkKey,
   chunkToScene,
   createStreamer,
+  lodManifest,
   type ManifestChunk,
   type Streamer,
   type StreamerOptions,
@@ -38,6 +40,12 @@ export interface StreamingOptions
   focus(): Vec2
   /** Speed of the focus in m/s, for load priority. Default: derived from successive `focus()` positions. */
   velocity?(): Vec2
+  /**
+   * Streams the `lod` asset of every chunk that has one, in a wider ring with its own budgets, so the
+   * distance is never empty. A chunk's low detail is hidden while its full detail is in the scene and
+   * stays loaded underneath: detail arriving or leaving swaps the two without a gap.
+   */
+  lod?: Pick<StreamerOptions<unknown>, 'gpuBudget' | 'ramBudget' | 'loadRadius' | 'unloadRadius' | 'maxConcurrent'>
 }
 
 /** The plugin, plus the streamer it created. `streamer` throws until `engine.use()` has resolved. */
@@ -59,8 +67,8 @@ export interface StreamingPlugin extends Plugin {
  * the handler.
  */
 export function streamingPlugin(options: StreamingOptions): StreamingPlugin {
-  const { scene, manifestUrl, focus, velocity, ...streamerOptions } = options
-  let state: { core: Engine; streamer: Streamer } | undefined
+  const { scene, manifestUrl, focus, velocity, lod, ...streamerOptions } = options
+  let state: { core: Engine; streamer: Streamer; far?: Streamer } | undefined
   return {
     name: 'streaming',
     get streamer() {
@@ -80,13 +88,40 @@ export function streamingPlugin(options: StreamingOptions): StreamingPlugin {
         root.position.set(x, 0, z)
       }
       const loader = createChunkLoader(scene, url, place)
+      const onError = (chunk: ManifestChunk, error: unknown) =>
+        core.log.error(`chunk ${chunk.cx},${chunk.cz} (${chunk.url}) failed`, error)
+      /** Chunks whose full detail is in the scene. */
+      const detailed = new Set<string>()
+      const farLoader = createChunkLoader(scene, url, place, 'lod')
+      const swap = () => {
+        for (const { root, chunk } of farLoader.handles) root.setEnabled(!detailed.has(chunkKey(chunk)))
+      }
       const streamer = createStreamer({
         ...streamerOptions,
         manifest,
         loader,
-        onStateChange: (chunk, state, previous) => core.events.emit('streaming:chunkState', { chunk, state, previous }),
-        onError: (chunk, error) => core.log.error(`chunk ${chunk.cx},${chunk.cz} (${chunk.url}) failed`, error),
+        onStateChange(chunk, state, previous) {
+          if (state === 'ready') detailed.add(chunkKey(chunk))
+          else detailed.delete(chunkKey(chunk))
+          swap()
+          core.events.emit('streaming:chunkState', { chunk, state, previous })
+        },
+        onError,
       })
+      // A second streamer over the low-detail assets. Same origin and threshold, fed the same focus: it shifts
+      // on the same update as the first.
+      const { origin, shiftThreshold } = streamerOptions
+      const far =
+        lod &&
+        createStreamer({
+          ...lod,
+          origin,
+          shiftThreshold,
+          manifest: lodManifest(manifest),
+          loader: farLoader,
+          onStateChange: swap,
+          onError,
+        })
 
       let previous: Vec2 | undefined
       let wasOverBudget = false
@@ -98,25 +133,27 @@ export function streamingPlugin(options: StreamingOptions): StreamingPlugin {
           const { x, z } = focus()
           const speed =
             velocity?.() ?? (previous ? { x: (x - previous.x) / dt, z: (z - previous.z) / dt } : { x: 0, z: 0 })
+          far?.update({ position: { x, z }, velocity: speed })
           const { originShift, overBudget } = streamer.update({ position: { x, z }, velocity: speed })
           previous = { x: x + (originShift?.x ?? 0), z: z + (originShift?.z ?? 0) }
           if (originShift) {
             // Recomputed from the integer indices, not accumulated: no drift however many shifts.
             for (const handle of loader.handles) place(handle)
+            for (const handle of farLoader.handles) place(handle)
             core.events.emit('streaming:originShift', { delta: originShift, origin: streamer.origin })
           }
           if (overBudget !== wasOverBudget) core.events.emit('streaming:overBudget', { overBudget })
           wasOverBudget = overBudget
         },
       })
-      state = { core, streamer }
+      state = { core, streamer, far }
     },
     async dispose() {
       if (!state) return
-      const { core, streamer } = state
+      const { core, streamer, far } = state
       state = undefined
       core.removeSystem('streaming')
-      await streamer.dispose()
+      await Promise.all([streamer.dispose(), far?.dispose()])
     },
   }
 }

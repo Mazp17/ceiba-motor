@@ -19,7 +19,7 @@ node tools/worldgen/src/cli.ts --out <dir> [--size 64] [--chunk-size 256] [--see
 | `--seed` | `1` | Integer. Same options and seed give byte-identical files |
 
 Node 24 runs the TypeScript directly; there is no build step. The default world is 16.4 km
-across: about 3,960 files, 60 MB, generated in about a second.
+across: about 7,920 files (full and low detail), 96 MB, generated in about two seconds.
 
 ## Output
 
@@ -50,5 +50,6 @@ elsewhere, something flipped or rotated the chunk.
 
 ## What it is not
 
-Not the asset pipeline: no compression, LODs, KTX2 or `lodUrl`. Not a level generator either;
+Not the asset pipeline: no compression or KTX2, and the `lod` of a chunk is just its ground and
+buildings of 25 m or more, not a simplified mesh. Not a level generator either;
 the content only has to be cheap, deterministic and easy to tell apart.

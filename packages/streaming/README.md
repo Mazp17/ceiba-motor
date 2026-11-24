@@ -133,15 +133,18 @@ const manifest: WorldManifest = {
       hash: '9f2c1ab4', // content hash, for cache versioning
       gpuBytes: 12_000_000, // estimates, reserved against the budgets
       ramBytes: 3_000_000,
-      lodUrl: 'chunks/0_0.lod.glb', // optional low-detail stand-in
+      // optional low-detail version, same fields
+      lod: { url: 'chunks/0_0.lod.glb', hash: '77aa01c2', gpuBytes: 400_000, ramBytes: 100_000 },
     },
   ],
 }
 ```
 
-A chunk that is not listed does not exist and is never requested. `lodUrl` is only carried in
-the manifest: the streamer has no placeholder state. A loader that wants one can show it from
-`request` and swap it in `decode`.
+A chunk that is not listed does not exist and is never requested. A streamer only loads
+the chunk's own asset. For a low-detail ring in the distance, run a second streamer over
+`lodManifest(manifest)` (the same world with each chunk replaced by its `lod`) with larger radii
+and its own budgets, and hide a chunk's low detail while its full detail is `ready`. That is what
+`streamingPlugin` of `@ceiba/babylon` does with its `lod` option.
 
 ## Debug view
 

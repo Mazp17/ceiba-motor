@@ -13,7 +13,7 @@ import '@babylonjs/loaders/glTF/2.0/index.js'
 import { NodeIO } from '@gltf-transform/core'
 import { afterAll, expect, test } from 'vitest'
 import { validateManifest } from '../../../packages/streaming/src/index.ts'
-import { buildChunk, generateWorld, isHole, MARKER, MARKER_COLOR } from '../src/generate.ts'
+import { buildChunk, generateWorld, isHole, LOD_MIN_HEIGHT, MARKER, MARKER_COLOR } from '../src/generate.ts'
 
 const OPTIONS = { size: 8, chunkSize: 256, seed: 7 }
 const EPSILON = 1e-3
@@ -102,7 +102,7 @@ test('holes are absent from the manifest and from disk, and density varies', asy
   }
   expect(holes).toBeGreaterThan(0)
   expect(listed.has('0_0')).toBe(true)
-  expect(readdirSync(join(dir, 'chunks'))).toHaveLength(manifest.chunks.length)
+  expect(readdirSync(join(dir, 'chunks'))).toHaveLength(manifest.chunks.length * 2) // detail and lod
 
   const sizes = manifest.chunks.map((chunk) => chunk.gpuBytes)
   expect(Math.max(...sizes)).toBeGreaterThan(5 * Math.min(...sizes))
@@ -196,4 +196,24 @@ test('a chunk loaded by Babylon into a left-handed scene meets the frame contrac
     0,
   )
   expect(gpuBytes).toBe(held + (mesh.getIndices() as Uint16Array).byteLength)
+})
+
+test('the lod of a chunk is its ground and tall buildings, and nothing else', async () => {
+  const { dir, manifest } = await world()
+  let dropped = 0
+  for (const chunk of manifest.chunks) {
+    const key = ({ position, color }: Vertex) => [...position, ...color].join()
+    const detail = await converted(readFileSync(join(dir, chunk.url)))
+    const lod = await converted(readFileSync(join(dir, chunk.lod?.url ?? '')))
+    const kept = new Set(lod.vertices.map(key))
+    expect(lod.vertices.slice(0, 4)).toEqual(detail.vertices.slice(0, 4)) // the ground
+    expect(detail.vertices.map(key)).toEqual(expect.arrayContaining([...kept]))
+    expect(lod.vertices.some((vertex) => vertex.color.every((value, i) => value === MARKER_COLOR[i]))).toBe(false)
+    // A box is 20 vertices and its first four are the top face.
+    for (let i = 4; i < lod.vertices.length; i += 20)
+      expect(lod.vertices[i]?.position[1]).toBeGreaterThanOrEqual(LOD_MIN_HEIGHT)
+    expect(chunk.lod?.gpuBytes).toBeLessThanOrEqual(chunk.gpuBytes)
+    dropped += detail.vertices.length - lod.vertices.length
+  }
+  expect(dropped).toBeGreaterThan(0)
 })

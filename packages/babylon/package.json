@@ -1,0 +1,33 @@
+{
+  "name": "@ceiba/babylon",
+  "version": "0.0.0",
+  "description": "Babylon.js rendering driven by the Ceiba engine loop: WebGPU or WebGL2 engine, scene and render system",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mazp17/ceiba-motor.git",
+    "directory": "packages/babylon"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@babylonjs/core": "^9.37.1",
+    "@ceiba/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@babylonjs/core": "^9.37.1",
+    "@ceiba/core": "workspace:^"
+  }
+}

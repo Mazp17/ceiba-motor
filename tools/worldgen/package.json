@@ -1,0 +1,13 @@
+{
+  "name": "@ceiba/worldgen",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@gltf-transform/core": "^4.5.1"
+  },
+  "devDependencies": {
+    "@babylonjs/core": "^9.37.1",
+    "@babylonjs/loaders": "^9.37.1",
+    "@types/node": "^24.0.0"
+  }
+}

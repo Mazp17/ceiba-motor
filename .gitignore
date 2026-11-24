@@ -8,3 +8,4 @@ dist
 coverage
 CLAUDE.md
 .claude
+apps/sandbox/public/world

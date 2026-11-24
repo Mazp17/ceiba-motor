@@ -4,6 +4,7 @@
     { "path": "packages/core" },
     { "path": "packages/streaming" },
     { "path": "packages/babylon" },
-    { "path": "apps/sandbox" }
+    { "path": "apps/sandbox" },
+    { "path": "tools/worldgen" }
   ]
 }

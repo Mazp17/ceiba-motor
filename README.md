@@ -45,6 +45,7 @@ Requiere Node 24 y pnpm 12.
 pnpm install
 pnpm build
 pnpm test
+pnpm size
 ```
 
 ## Roadmap

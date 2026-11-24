@@ -5,7 +5,8 @@
   "packageManager": "pnpm@12.6.0",
   "scripts": {
     "build": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "size": "tsc -b && node scripts/size.js"
   },
   "devDependencies": {
     "typescript": "^7.0.2",

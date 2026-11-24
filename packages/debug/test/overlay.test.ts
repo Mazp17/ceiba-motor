@@ -10,16 +10,22 @@ class FakeElement {
   textContent = ''
   hidden = false
   children: FakeElement[] = []
+  parent?: FakeElement
+  title = ''
+  checked = false
+  value = ''
   onclick = () => {}
+  onchange = () => {}
   constructor(readonly tag: string) {}
   append(child: FakeElement) {
+    child.parent = this
     this.children.push(child)
   }
   replaceChildren() {
     this.children = []
   }
   remove() {
-    body.children = body.children.filter((child) => child !== this)
+    if (this.parent) this.parent.children = this.parent.children.filter((child) => child !== this)
   }
   // Any canvas call is accepted and ignored.
   getContext = () => new Proxy({}, { get: () => () => {}, set: () => true })
@@ -268,6 +274,114 @@ test('actions become buttons, whether added before or after the overlay exists',
   click('reload')
   expect(teleport).toHaveBeenCalledTimes(1)
   expect(reload).toHaveBeenCalledTimes(2)
+})
+
+function fakeLighting() {
+  const light = (id: number, name: string, type: string) => ({
+    id,
+    name,
+    type,
+    intensity: 1,
+    enabled: true,
+    shadows: false,
+  })
+  const state = { lights: [light(1, 'sun', 'directional'), light(2, 'lamp', 'point')], overLimit: 0 }
+  const lighting = {
+    snapshot: vi.fn(() => ({
+      lights: state.lights,
+      shadowGenerators: state.lights.filter((l) => l.shadows).length,
+      overLimit: state.overLimit,
+    })),
+    setEnabled: vi.fn((id: number, enabled: boolean) => {
+      for (const l of state.lights) if (l.id === id) l.enabled = enabled
+    }),
+    setIntensity: vi.fn(),
+    setGizmos: vi.fn(),
+  }
+  return { state, lighting, light }
+}
+/** The row of a light: its intensity input, then the label holding its checkbox and text. */
+const lightRow = (name: string) => {
+  const row = all(body).find(
+    (node) => node.tag === 'div' && node.children[1]?.children[1]?.textContent.startsWith(name),
+  )
+  return { intensity: row?.children[0], enabled: row?.children[1]?.children[0] }
+}
+
+test('lights: one row per light, totals, and no warning inside the limit', () => {
+  const { state, lighting } = fakeLighting()
+  Object.assign(state.lights[0] ?? {}, { shadows: true, intensity: 2.5 })
+  const { run } = setup({ lighting })
+  run(1000)
+  expect(lighting.snapshot).toHaveBeenCalledTimes(5)
+  expect(text()).toContain('lights 2  enabled 2  shadow generators 1')
+  expect(text()).toContain('sun  directional  shadows')
+  expect(text()).toContain('lamp  point')
+  expect(text()).not.toContain('OVER LIGHT LIMIT')
+  expect(lightRow('sun').intensity?.value).toBe('2.5')
+  expect(lightRow('sun').enabled?.checked).toBe(true)
+})
+
+test('lights: the row controls enable a light and set its intensity', () => {
+  const { lighting } = fakeLighting()
+  const { run } = setup({ lighting })
+  run(300)
+  const { enabled, intensity } = lightRow('lamp')
+  if (!enabled || !intensity) throw new Error('no row')
+  enabled.checked = false
+  enabled.onchange()
+  expect(lighting.setEnabled).toHaveBeenCalledWith(2, false)
+  run(300)
+  expect(text()).toContain('lights 2  enabled 1')
+  intensity.value = '0.4'
+  intensity.onchange()
+  expect(lighting.setIntensity).toHaveBeenCalledWith(2, 0.4)
+  for (const invalid of ['', '-1', 'x']) {
+    intensity.value = invalid
+    intensity.onchange()
+  }
+  expect(lighting.setIntensity).toHaveBeenCalledTimes(1)
+})
+
+test('lights: rows follow lights that are added and removed', () => {
+  const { state, lighting, light } = fakeLighting()
+  const { run } = setup({ lighting })
+  run(300)
+  const rows = () => all(body).filter((node) => node.title === 'intensity').length
+  expect(rows()).toBe(2)
+  state.lights = [light(2, 'lamp', 'point'), light(3, 'torch', 'spot')]
+  run(300)
+  expect(rows()).toBe(2)
+  expect(text()).toContain('torch  spot')
+  expect(text()).not.toContain('sun')
+  state.lights = []
+  run(300)
+  expect(rows()).toBe(0)
+  expect(text()).toContain('lights 0  enabled 0')
+})
+
+test('lights: meshes over their material limit are flagged', () => {
+  const { state, lighting } = fakeLighting()
+  const { run } = setup({ lighting })
+  state.overLimit = 12
+  run(300)
+  expect(text()).toContain('OVER LIGHT LIMIT: 12 meshes')
+  state.overLimit = 0
+  run(300)
+  expect(text()).not.toContain('OVER LIGHT LIMIT')
+})
+
+test('lights: the gizmo checkbox toggles them, and dispose turns them off', () => {
+  const { lighting } = fakeLighting()
+  const { debug } = setup({ lighting })
+  const gizmos = all(body).find((node) => node.tag === 'label' && node.children[1]?.textContent === 'light gizmos')
+    ?.children[0]
+  if (!gizmos) throw new Error('no checkbox')
+  gizmos.checked = true
+  gizmos.onchange()
+  expect(lighting.setGizmos).toHaveBeenLastCalledWith(true)
+  debug.dispose()
+  expect(lighting.setGizmos).toHaveBeenLastCalledWith(false)
 })
 
 test('installing twice throws', () => {

@@ -6,6 +6,7 @@
     { "path": "packages/babylon" },
     { "path": "packages/debug" },
     { "path": "apps/sandbox" },
-    { "path": "tools/worldgen" }
+    { "path": "tools/worldgen" },
+    { "path": "tools/pipeline" }
   ]
 }

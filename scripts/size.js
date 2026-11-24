@@ -3,8 +3,10 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 
-// Bytes, gzip. core must also stay free of runtime dependencies.
-const BUDGETS = { core: 10_000 }
+// Bytes, gzip. streaming measured 3.9 kB as pure logic; 8 kB leaves room for its thin Babylon adapter.
+const BUDGETS = { core: 10_000, streaming: 8_000 }
+// These must also stay free of runtime dependencies.
+const NO_DEPS = ['core', 'streaming']
 
 let failed = false
 for (const [name, budget] of Object.entries(BUDGETS)) {
@@ -12,7 +14,7 @@ for (const [name, budget] of Object.entries(BUDGETS)) {
   const js = readdirSync(dir, { recursive: true }).filter((file) => file.endsWith('.js'))
   const size = gzipSync(Buffer.concat(js.map((file) => readFileSync(`${dir}/${file}`)))).length
   const deps = Object.keys(JSON.parse(readFileSync(`packages/${name}/package.json`, 'utf8')).dependencies ?? {})
-  const ok = size <= budget && !(name === 'core' && deps.length)
+  const ok = size <= budget && !(NO_DEPS.includes(name) && deps.length)
   console.log(
     `${ok ? 'ok  ' : 'FAIL'} @ceiba/${name}: ${size} B gzip of ${budget} B (${Math.round((size / budget) * 100)}%), ${deps.length} dependencies`,
   )

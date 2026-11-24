@@ -17,7 +17,7 @@ Capa de mundo abierto para juegos en el navegador, sobre [Babylon.js](https://ww
 | Paquete | Estado | Qué hace |
 | --- | --- | --- |
 | `@ceiba/core` | listo | Loop de paso fijo, fases, aislamiento de errores, eventos, reloj, logger, plugins |
-| `@ceiba/streaming` | pendiente | Grilla de chunks, cola de prioridad, presupuestos de memoria, LRU |
+| `@ceiba/streaming` | lógica pura lista, falta el adaptador a Babylon | Grilla de chunks, cola de prioridad, presupuestos de memoria, LRU |
 | `@ceiba/physics` | pendiente | Colisionadores por chunk y vehículo sobre Havok |
 | `@ceiba/input` | pendiente | Mapeo de acciones sobre teclado, mouse y gamepad |
 | `@ceiba/save` | pendiente | Estado a IndexedDB con versionado de esquema |

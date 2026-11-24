@@ -48,6 +48,10 @@ export interface Engine {
   /** Await the result if the plugin installs asynchronously. */
   use(plugin: Plugin): void | Promise<void>
   addSystem(system: System): void
+  /** No-op if no system has that name. Safe to call from inside a system. */
+  removeSystem(name: string): void
+  /** Turns a system disabled by an error back on. No-op if it is unknown or already running. */
+  enableSystem(name: string): void
   /** Advances one frame. `start()` calls it from requestAnimationFrame; call it directly when headless. */
   tick(nowMs: number): void
   start(): void
@@ -59,8 +63,9 @@ export function createEngine(options: EngineOptions = {}): Engine {
   const log = createLogger(options.logLevel)
   const events = createEventBus<EngineEvents>()
   const clock = { timeScale: 1, paused: false, time: 0 }
-  const systems: System[] = []
-  const failed = new Set<System>()
+  // Replaced, never mutated: a tick in progress keeps iterating the array it started with.
+  let systems: System[] = []
+  const disabled = new WeakSet<System>()
   const fixed: Frame = { dt: fixedDt, alpha: 0 }
   let last: number | undefined
   let acc = 0
@@ -68,11 +73,11 @@ export function createEngine(options: EngineOptions = {}): Engine {
 
   function run(phase: Phase, frame: Frame) {
     for (const system of systems) {
-      if (system.phase !== phase || failed.has(system)) continue
+      if (system.phase !== phase || disabled.has(system)) continue
       try {
         system.update(frame)
       } catch (error) {
-        failed.add(system)
+        disabled.add(system)
         log.error(`system "${system.name}" disabled after error`, error)
         events.emit('system:error', { system: system.name, error })
       }
@@ -105,8 +110,18 @@ export function createEngine(options: EngineOptions = {}): Engine {
     use: (plugin) => plugin.install(engine),
     addSystem(system) {
       if (systems.some((s) => s.name === system.name)) throw new Error(`system "${system.name}" already registered`)
-      systems.push(system)
-      systems.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      disabled.delete(system)
+      systems = [...systems, system].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    },
+    removeSystem(name) {
+      const system = systems.find((s) => s.name === name)
+      if (!system) return
+      disabled.add(system) // a tick in progress still holds it in its array
+      systems = systems.filter((s) => s !== system)
+    },
+    enableSystem(name) {
+      const system = systems.find((s) => s.name === name)
+      if (system) disabled.delete(system)
     },
     start() {
       if (raf) return

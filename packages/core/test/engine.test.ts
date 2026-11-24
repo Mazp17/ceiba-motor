@@ -80,3 +80,30 @@ test('use installs the plugin with the engine', () => {
   engine.use({ name: 'p', install: (e) => void (got = e) })
   expect(got).toBe(engine)
 })
+
+test('removeSystem takes effect in the same frame and the system can be added again', () => {
+  const engine = make()
+  let draws = 0
+  const draw = { name: 'draw', phase: 'render' as const, update: () => void draws++ }
+  engine.addSystem(draw)
+  engine.addSystem({ name: 'remover', phase: 'input', update: () => engine.removeSystem('draw') })
+  engine.tick(0)
+  expect(draws).toBe(0)
+  engine.removeSystem('remover')
+  engine.removeSystem('unknown')
+  engine.addSystem(draw)
+  engine.tick(16)
+  expect(draws).toBe(1)
+})
+
+test('enableSystem turns a failed system back on', () => {
+  const engine = make()
+  let calls = 0
+  engine.addSystem({ name: 'flaky', phase: 'input', update: () => { if (++calls === 1) throw new Error('boom') } })
+  engine.tick(0)
+  engine.tick(16)
+  expect(calls).toBe(1)
+  engine.enableSystem('flaky')
+  engine.tick(32)
+  expect(calls).toBe(2)
+})

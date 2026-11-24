@@ -13,7 +13,7 @@ import {
   type Vec2,
   validateManifest,
 } from '@ceiba/streaming'
-import { type ChunkHandle, createChunkLoader } from './chunkLoader.ts'
+import { type ChunkHandle, createChunkLoader, type MeshoptDecoder } from './chunkLoader.ts'
 
 declare module '@ceiba/core' {
   interface EngineEvents {
@@ -41,6 +41,12 @@ export interface StreamingOptions
   /** Speed of the focus in m/s, for load priority. Default: derived from successive `focus()` positions. */
   velocity?(): Vec2
   /**
+   * Decoder for chunks compressed with Meshopt, as the asset pipeline writes them:
+   * `import { MeshoptDecoder } from 'meshoptimizer/decoder'`. Nothing is downloaded from a CDN; without it
+   * such a chunk fails to load.
+   */
+  meshopt?: MeshoptDecoder
+  /**
    * Streams the `lod` asset of every chunk that has one, in a wider ring with its own budgets, so the
    * distance is never empty. A chunk's low detail is hidden while its full detail is in the scene and
    * stays loaded underneath: detail arriving or leaving swaps the two without a gap.
@@ -67,7 +73,7 @@ export interface StreamingPlugin extends Plugin {
  * the handler.
  */
 export function streamingPlugin(options: StreamingOptions): StreamingPlugin {
-  const { scene, manifestUrl, focus, velocity, lod, ...streamerOptions } = options
+  const { scene, manifestUrl, focus, velocity, meshopt, lod, ...streamerOptions } = options
   let state: { core: Engine; streamer: Streamer; far?: Streamer } | undefined
   return {
     name: 'streaming',
@@ -87,12 +93,12 @@ export function streamingPlugin(options: StreamingOptions): StreamingPlugin {
         const { x, z } = chunkToScene(chunk, streamer.origin, manifest.chunkSize)
         root.position.set(x, 0, z)
       }
-      const loader = createChunkLoader(scene, url, place)
+      const loader = createChunkLoader(scene, url, place, 'chunk', meshopt)
       const onError = (chunk: ManifestChunk, error: unknown) =>
         core.log.error(`chunk ${chunk.cx},${chunk.cz} (${chunk.url}) failed`, error)
       /** Chunks whose full detail is in the scene. */
       const detailed = new Set<string>()
-      const farLoader = createChunkLoader(scene, url, place, 'lod')
+      const farLoader = createChunkLoader(scene, url, place, 'lod', meshopt)
       const swap = () => {
         for (const { root, chunk } of farLoader.handles) root.setEnabled(!detailed.has(chunkKey(chunk)))
       }

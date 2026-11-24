@@ -1,0 +1,17 @@
+{
+  "name": "@ceiba/pipeline",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "meshoptimizer": "^1.3.0",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@babylonjs/core": "^9.37.1",
+    "@babylonjs/loaders": "^9.37.1",
+    "@types/node": "^24.0.0"
+  }
+}

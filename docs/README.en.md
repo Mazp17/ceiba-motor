@@ -59,6 +59,15 @@ pnpm size
 
 `pnpm dev` opens the sandbox (Vite) at `http://localhost:5173/?scene=hello`.
 
+### Smoke test
+
+```sh
+pnpm exec playwright install chromium   # once
+pnpm smoke
+```
+
+Builds the sandbox, serves it with `vite preview` and loads every scene in headless Chromium (WebGL2 on software GL). It fails on a `console.error`, an uncaught error, a failed request or a scene that never starts rendering; a system the core disabled counts, because it is logged as an error. If `apps/sandbox/public/world` has no world, a small one is generated first; an existing one is left alone.
+
 ## Roadmap
 
 Project status and expected output in [ROADMAP.md](../ROADMAP.md).

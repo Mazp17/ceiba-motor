@@ -10,6 +10,36 @@ export interface RenderStats {
   activeMeshes: number
 }
 
+/** One light of the scene. */
+export interface LightInfo {
+  /** Stable while the light exists: it is what `setEnabled` and `setIntensity` receive. */
+  id: number
+  name: string
+  /** `'hemispheric'`, `'directional'`, `'point'`, `'spot'`, or whatever the renderer calls it. */
+  type: string
+  intensity: number
+  enabled: boolean
+  /** Whether it has a shadow generator. */
+  shadows: boolean
+}
+
+export interface LightingSnapshot {
+  lights: readonly LightInfo[]
+  shadowGenerators: number
+  /** Meshes lit by more enabled lights than their material takes: the extra lights are silently dropped. */
+  overLimit: number
+}
+
+/** What the lights panel needs. `babylonLights(scene)` from `@ceiba/debug/babylon` provides it. */
+export interface LightingDebug {
+  /** Called a few times per second while the overlay is shown. */
+  snapshot(): LightingSnapshot
+  setEnabled(id: number, enabled: boolean): void
+  setIntensity(id: number, intensity: number): void
+  /** Shows or hides a marker for each light in the 3D view, following lights as they come and go. */
+  setGizmos(shown: boolean): void
+}
+
 /** What the streaming panel and the chunk map need. The streamer does not expose its own options, so they are repeated here. */
 export interface StreamingDebug {
   streamer: Pick<Streamer, 'origin' | 'snapshot'>
@@ -31,7 +61,7 @@ export interface StreamingDebug {
   focus(): { x: number; z: number; heading?: number }
 }
 
-/** Options of `debugPlugin`. Everything is optional: without `renderStats` and `streaming` those panels are left out. */
+/** Options of `debugPlugin`. Everything is optional: without `renderStats`, `streaming` and `lighting` those panels are left out. */
 export interface DebugOptions {
   /** URL query parameter that shows the overlay on install. Default `'debug'` (`?debug`). */
   param?: string
@@ -40,6 +70,7 @@ export interface DebugOptions {
   /** Called a few times per second, after the frame is rendered. */
   renderStats?: () => RenderStats
   streaming?: StreamingDebug
+  lighting?: LightingDebug
 }
 
 /** The plugin, plus the handle to drive the overlay. */
@@ -69,7 +100,7 @@ const LATE_COLOR = '#ffffff'
  * and the overlay's DOM is not even created.
  */
 export function debugPlugin(options: DebugOptions = {}): DebugPlugin {
-  const { param = 'debug', toggleKey = 'Backquote', renderStats, streaming } = options
+  const { param = 'debug', toggleKey = 'Backquote', renderStats, streaming, lighting } = options
   const actions: [name: string, run: () => void][] = []
   const errors = new Map<string, unknown>()
   const frames = createFrameWindow()
@@ -113,6 +144,29 @@ export function debugPlugin(options: DebugOptions = {}): DebugPlugin {
     return el('span', item, '', label)
   }
 
+  function checkbox(parent: HTMLElement, label: string, change: (checked: boolean) => void) {
+    const wrap = el('label', parent, 'cursor:pointer')
+    const node = el('input', wrap, 'margin:0 4px 0 0;vertical-align:middle')
+    node.type = 'checkbox'
+    node.onchange = () => change(node.checked)
+    return { node, text: el('span', wrap, 'white-space:pre', label) }
+  }
+
+  function lightRow(parent: HTMLElement, id: number) {
+    const row = el('div', parent)
+    const intensity = el('input', row, 'font:inherit;width:6ch;margin-right:6px')
+    intensity.type = 'number'
+    intensity.min = '0'
+    intensity.step = '0.1'
+    intensity.title = 'intensity'
+    intensity.onchange = () => {
+      const value = Number(intensity.value)
+      if (intensity.value !== '' && value >= 0) lighting?.setIntensity(id, value)
+    }
+    const { node, text } = checkbox(row, '', (checked) => lighting?.setEnabled(id, checked))
+    return { row, intensity, enabled: node, text, seen: 0 }
+  }
+
   function build() {
     const root = el(
       'div',
@@ -139,10 +193,26 @@ export function debugPlugin(options: DebugOptions = {}): DebugPlugin {
       swatch(marks, `border:1px dashed ${RADIUS_COLOR}`, 'unload radius')
       stream = { budget, info, ctx }
     }
+    let lights: { totals: HTMLElement; warning: HTMLElement; list: HTMLElement } | undefined
+    if (lighting) {
+      const totals = el('div', root, 'white-space:pre;margin-top:6px')
+      const warning = el('div', root, 'background:#ef4444;color:#fff;font-weight:bold')
+      checkbox(root, 'light gizmos', (checked) => lighting.setGizmos(checked))
+      lights = { totals, warning, list: el('div', root, 'max-height:30vh;overflow:auto') }
+    }
     const errorList = el('div', root)
     const actionList = el('div', root)
     for (const [name, run] of actions) button(actionList, name, run)
-    return { root, perf, stream, counts, errorList, actionList }
+    return {
+      root,
+      perf,
+      stream,
+      counts,
+      lights,
+      lightRows: new Map<number, ReturnType<typeof lightRow>>(),
+      errorList,
+      actionList,
+    }
   }
 
   function renderErrors() {
@@ -158,8 +228,38 @@ export function debugPlugin(options: DebugOptions = {}): DebugPlugin {
     }
   }
 
+  function writeLights() {
+    if (!ui?.lights || !lighting) return
+    const { totals, warning, list } = ui.lights
+    const { lights, shadowGenerators, overLimit } = lighting.snapshot()
+    const rows = ui.lightRows
+    let enabled = 0
+    for (const light of lights) {
+      let row = rows.get(light.id)
+      if (!row) {
+        row = lightRow(list, light.id)
+        rows.set(light.id, row)
+      }
+      row.seen = textAt
+      if (light.enabled) enabled++
+      row.enabled.checked = light.enabled
+      // Not while it is being typed in.
+      if (document.activeElement !== row.intensity) row.intensity.value = String(+light.intensity.toFixed(2))
+      row.text.textContent = `${light.name}  ${light.type}${light.shadows ? '  shadows' : ''}`
+    }
+    // Lights that left the scene (a chunk unloaded) take their row with them.
+    for (const [id, row] of rows) {
+      if (row.seen === textAt) continue
+      row.row.remove()
+      rows.delete(id)
+    }
+    totals.textContent = `lights ${lights.length}  enabled ${enabled}  shadow generators ${shadowGenerators}`
+    warning.textContent = overLimit ? `OVER LIGHT LIMIT: ${overLimit} meshes drop lights (maxSimultaneousLights)` : ''
+  }
+
   function writeText() {
     if (!ui) return
+    writeLights()
     const { fps, average, worst } = frames.stats()
     const lines = [
       `${fps.toFixed(0)} fps  frame ${average.toFixed(1)} ms avg  ${worst.toFixed(1)} ms worst`,
@@ -330,6 +430,7 @@ export function debugPlugin(options: DebugOptions = {}): DebugPlugin {
       engine.removeSystem('debug:overlay')
       off()
       window.removeEventListener('keydown', onKey)
+      lighting?.setGizmos(false)
       ui?.root.remove()
       ui = undefined
       visible = false

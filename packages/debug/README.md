@@ -1,13 +1,14 @@
 # @ceiba/debug
 
 A debug overlay for the Ceiba engine: performance counters, streaming budgets with a top-down
-chunk map, systems disabled by an error, and buttons for your own debug actions. Plain DOM and
+chunk map, the lights of the scene, systems disabled by an error, and buttons for your own debug
+actions. Plain DOM and
 one 2D canvas, installed as a core plugin.
 
 > Early development. The API changes without notice and the package is not on npm yet.
 >
 > The logic is unit-tested, but the overlay has **not been looked at in a browser yet**: the
-> layout, colours and canvas drawing are unverified.
+> layout, colours, canvas drawing and light gizmos are unverified.
 
 `@ceiba/core` is a peer dependency. `@ceiba/streaming` and `@babylonjs/core` are optional
 peers: the overlay works without either, and only `@ceiba/debug/babylon` runs Babylon code.
@@ -122,6 +123,50 @@ the unload radius:
 The legend stays below the map. A blank cell inside the load radius is either a chunk that is
 not in the manifest or one whose load has not started: the snapshot does not tell them apart.
 
+## Lights
+
+Lighting is plain Babylon; this panel only shows the lights a scene has and lets you poke at
+them, which matters once lights stream in and out with their chunks.
+
+```ts
+import type { Scene } from '@babylonjs/core/scene.js'
+import { debugPlugin } from '@ceiba/debug'
+import { babylonLights } from '@ceiba/debug/babylon'
+
+declare const scene: Scene
+
+debugPlugin({ lighting: babylonLights(scene) })
+```
+
+- Totals: lights, how many are enabled, and shadow generators.
+- One row per light: an intensity field, a checkbox that enables or disables it, its name, its
+  type (`hemispheric`, `directional`, `point`, `spot`; any other light shows its class name) and
+  `shadows` when it has a shadow generator. Rows come and go with the lights.
+- `light gizmos` shows Babylon's `LightGizmo` for every light, so its position and direction are
+  visible in the 3D view. They render in their own utility layer, follow lights added and removed
+  later, and are disposed when the box is unchecked or the plugin is disposed.
+- `OVER LIGHT LIMIT: n meshes drop lights` when meshes are lit by more lights than their
+  material renders.
+
+That last one is the failure mode of an open world. A Babylon material renders at most
+`maxSimultaneousLights` lights per mesh (4 by default) and silently drops the rest. Babylon does
+not cull lights by distance or `range` either: every enabled light counts for every mesh, unless
+its `includedOnlyMeshes`, `excludedMeshes` or layer masks say otherwise. So the fifth lamp to
+stream in anywhere turns one off everywhere. Raise `maxSimultaneousLights` on the material (each
+light costs shader work on every mesh), or scope lights with `includedOnlyMeshes`.
+
+How it is counted: Babylon keeps `mesh.lightSources` up to date itself, so `babylonLights`
+compares its length with the material's `maxSimultaneousLights` for each active mesh (the ones
+drawn last frame). Limits of that check:
+
+- Meshes that were not drawn (culled, or in a chunk not loaded) are not counted.
+- A mesh without a material counts against 4, the limit of the scene's default material.
+- A material without the property (`ShaderMaterial`, `MultiMaterial`) or with `disableLighting`
+  is never counted. Sub-materials of a `MultiMaterial` are not inspected.
+- The engine's own cap on simultaneous lights, when lower than the material's, is ignored.
+
+`lighting` is any `LightingDebug`, so another renderer can feed the panel too.
+
 ## System errors
 
 A system that throws is disabled by the core and listed in the overlay with its error and a
@@ -142,8 +187,9 @@ debug.visible = true // show or hide from code
 
 ## Update rates
 
-Text is rewritten 4 times per second and the map is redrawn 10 times per second, which is also
-how often `streamer.snapshot()` is called.
+Text is rewritten 4 times per second, which is also how often `lighting.snapshot()` is called,
+and the map is redrawn 10 times per second, which is also how often `streamer.snapshot()` is
+called.
 
 ## API
 
@@ -155,6 +201,7 @@ how often `streamer.snapshot()` is called.
 | `toggleKey` | `'Backquote'` | `KeyboardEvent.code` of the key that shows and hides it |
 | `renderStats` | — | `() => RenderStats`, e.g. `babylonStats(scene)` |
 | `streaming` | — | A `StreamingDebug`: `streamer`, `chunkSize`, `gpuBudget`, `ramBudget`, `loadRadius` (2), `unloadRadius` (3), `focus()` |
+| `lighting` | — | A `LightingDebug`, e.g. `babylonLights(scene)`: `snapshot()`, `setEnabled(id, enabled)`, `setIntensity(id, intensity)`, `setGizmos(shown)` |
 
 Returns a `DebugPlugin`: a core `Plugin` plus
 
@@ -162,7 +209,7 @@ Returns a `DebugPlugin`: a core `Plugin` plus
 | --- | --- |
 | `visible` | Whether the overlay is shown. Assign to show or hide it |
 | `addAction(name, run)` | Adds a button. Works before and after install |
-| `dispose()` | Removes the systems, the listeners and the element |
+| `dispose()` | Removes the systems, the listeners, the element and the light gizmos |
 
 It registers two systems: `debug:steps` (`update`) and `debug:overlay` (`render`, order 1000,
 after the scene is drawn). `install` throws if the plugin is already installed.
@@ -171,9 +218,16 @@ after the scene is drawn). `install` throws if the plugin is already installed.
 
 Returns the `renderStats` function for a Babylon scene.
 
+### `babylonLights(scene)` — `@ceiba/debug/babylon`
+
+Returns the `lighting` option for a Babylon scene. `snapshot()` returns
+`{ lights, shadowGenerators, overLimit }`, each light being
+`{ id, name, type, intensity, enabled, shadows }` with `id` its Babylon `uniqueId`.
+
 ### Types
 
-`DebugOptions`, `DebugPlugin`, `RenderStats`, `StreamingDebug`.
+`DebugOptions`, `DebugPlugin`, `LightInfo`, `LightingDebug`, `LightingSnapshot`, `RenderStats`,
+`StreamingDebug`.
 
 ## License
 

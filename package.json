@@ -10,10 +10,13 @@
     "lint": "biome check",
     "format": "biome check --write",
     "size": "tsc -b && node scripts/size.js",
-    "world": "node tools/worldgen/src/cli.ts --out apps/sandbox/public/world"
+    "world": "node tools/worldgen/src/cli.ts --out apps/sandbox/public/world",
+    "pipeline": "node tools/pipeline/src/cli.ts",
+    "smoke": "node -e \"process.exit(require('fs').existsSync('apps/sandbox/public/world/manifest.json')?0:1)\" || pnpm world --size 8; playwright test"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.8",
+    "@playwright/test": "^1.65.1",
     "typescript": "^7.0.2",
     "vitest": "^5.1.1"
   },

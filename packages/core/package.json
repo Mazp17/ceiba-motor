@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "description": "Game loop, system phases, error isolation, events and plugins for the Ceiba engine",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mazp17/ceiba-motor.git",
+    "directory": "packages/core"
+  },
   "type": "module",
   "sideEffects": false,
   "exports": {

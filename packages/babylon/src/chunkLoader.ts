@@ -16,11 +16,13 @@ export interface ChunkHandle {
 const CACHE = 'ceiba-chunks'
 const HASH = 'x-ceiba-hash'
 
-// Internal: `streamingPlugin` is the public way in. `place` positions a new root; `handles` is every chunk in the scene.
+// Internal: `streamingPlugin` is the public way in. `place` positions a new root; `handles` is every chunk in the
+// scene; roots are named `<prefix>:<cx>,<cz>`.
 export function createChunkLoader(
   scene: Scene,
   manifestUrl: string,
   place: (handle: ChunkHandle) => void,
+  prefix = 'chunk',
 ): ChunkLoader<ChunkHandle, Uint8Array> & { handles: Set<ChunkHandle> } {
   // The pure modules plus an explicit, idempotent registration instead of the side-effect import
   // `@babylonjs/loaders/glTF/2.0/glTFLoader.js`: this package stays `sideEffects: false` for real.
@@ -57,7 +59,7 @@ export function createChunkLoader(
       }
       // Added before it is parented: the container warns about parents it does not own.
       container.addAllToScene()
-      const root = new TransformNode(`chunk:${chunkKey(chunk)}`, scene)
+      const root = new TransformNode(`${prefix}:${chunkKey(chunk)}`, scene)
       for (const node of container.rootNodes) node.parent = root
       const handle = { chunk, root, container }
       place(handle)

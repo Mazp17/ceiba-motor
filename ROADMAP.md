@@ -49,9 +49,3 @@ see what the chunks are doing.
 
 The frame-time target and the memory budgets are not set yet. They are fixed once the target
 hardware is chosen, before phase 2 is closed.
-
-## Open decisions
-
-- **Entity model**: Babylon nodes plus core systems (proposed), or a lightweight ECS.
-- **Floating origin**: depends on a spike combining Babylon's large-world support with Havok,
-  at the start of phase 2.
